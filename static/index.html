@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Hyderabad Property Finder</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f7f6f2; --surface: #ffffff; --border: #e5e3db;
+    --text: #1a1a18; --muted: #6b6a63; --hint: #9b9a93;
+    --teal: #1D9E75; --teal-light: #E1F5EE; --teal-dark: #085041;
+    --purple: #7F77DD; --purple-light: #EEEDFE; --purple-dark: #3C3489;
+    --amber: #EF9F27; --amber-light: #FAEEDA; --amber-dark: #633806;
+    --coral: #D85A30; --coral-light: #FAECE7;
+    --radius: 10px; --radius-lg: 14px;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+
+  /* Layout */
+  .shell { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+  .sidebar { background: var(--surface); border-right: 1px solid var(--border);
+    padding: 24px 16px; display: flex; flex-direction: column; gap: 6px; }
+  .main { padding: 28px; overflow-y: auto; }
+
+  /* Sidebar */
+  .logo { font-size: 16px; font-weight: 500; padding: 0 8px 16px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+  .logo span { color: var(--teal); }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+    border-radius: var(--radius); cursor: pointer; color: var(--muted);
+    font-size: 13px; transition: background .15s, color .15s; border: none;
+    background: none; width: 100%; text-align: left; }
+  .nav-item:hover { background: var(--bg); color: var(--text); }
+  .nav-item.active { background: var(--teal-light); color: var(--teal-dark); font-weight: 500; }
+  .nav-icon { width: 18px; text-align: center; font-size: 15px; }
+
+  /* Tabs */
+  .tab { display: none; }
+  .tab.active { display: block; }
+
+  /* Page header */
+  .page-header { margin-bottom: 24px; }
+  .page-header h1 { font-size: 20px; font-weight: 500; }
+  .page-header p { color: var(--muted); font-size: 13px; margin-top: 3px; }
+
+  /* Cards */
+  .card { background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px; }
+  .card-title { font-size: 13px; font-weight: 500; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .04em; margin-bottom: 14px; }
+
+  /* Search form */
+  .search-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .field input, .field select {
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius);
+    font-size: 13px; background: var(--bg); color: var(--text);
+    outline: none; transition: border .15s; }
+  .field input:focus, .field select:focus { border-color: var(--teal); }
+  .btn { padding: 9px 18px; border-radius: var(--radius); border: none; cursor: pointer;
+    font-size: 13px; font-weight: 500; transition: opacity .15s; }
+  .btn-primary { background: var(--teal); color: #fff; }
+  .btn-primary:hover { opacity: .88; }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+  .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+
+  /* Stat cards */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat { background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 16px 18px; }
+  .stat-val { font-size: 22px; font-weight: 500; line-height: 1; }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .stat-teal .stat-val { color: var(--teal); }
+  .stat-purple .stat-val { color: var(--purple); }
+  .stat-amber .stat-val { color: var(--amber); }
+  .stat-coral .stat-val { color: var(--coral); }
+
+  /* Result cards */
+  .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; margin-top: 20px; }
+  .result-card { background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 16px; transition: border-color .15s, box-shadow .15s; }
+  .result-card:hover { border-color: var(--teal); box-shadow: 0 2px 12px rgba(29,158,117,.08); }
+  .rc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .rc-price { font-size: 18px; font-weight: 500; color: var(--teal); }
+  .rc-score { font-size: 11px; padding: 2px 8px; border-radius: 999px;
+    background: var(--teal-light); color: var(--teal-dark); font-weight: 500; }
+  .rc-loc { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .rc-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 999px;
+    border: 1px solid var(--border); color: var(--muted); }
+  .rc-reason { font-size: 11px; color: var(--teal-dark); background: var(--teal-light);
+    border-radius: 6px; padding: 4px 8px; }
+  .rc-amenities { font-size: 11px; color: var(--muted); margin-top: 8px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Map iframe */
+  .map-frame { width: 100%; height: 520px; border: none; border-radius: var(--radius-lg);
+    border: 1px solid var(--border); }
+  .map-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .map-tab { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border);
+    background: none; cursor: pointer; font-size: 13px; color: var(--muted); transition: all .15s; }
+  .map-tab.active { background: var(--purple-light); color: var(--purple-dark);
+    border-color: var(--purple); font-weight: 500; }
+
+  /* Predict form */
+  .predict-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .predict-result { margin-top: 20px; padding: 20px; background: var(--teal-light);
+    border-radius: var(--radius-lg); border: 1px solid #5DCAA5; }
+  .predict-price { font-size: 28px; font-weight: 500; color: var(--teal-dark); }
+  .predict-range { font-size: 13px; color: var(--teal-dark); margin-top: 4px; opacity: .8; }
+
+  /* Chart */
+  .chart-wrap { height: 320px; position: relative; }
+
+  /* Empty / loading */
+  .empty { text-align: center; padding: 48px; color: var(--hint); }
+  .empty-icon { font-size: 32px; margin-bottom: 10px; }
+  .spinner { display: inline-block; width: 18px; height: 18px;
+    border: 2px solid var(--border); border-top-color: var(--teal);
+    border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Toast */
+  #toast { position: fixed; bottom: 24px; right: 24px; padding: 10px 16px;
+    background: var(--text); color: #fff; border-radius: var(--radius);
+    font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 999; }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">Hyderabad <span>Homes</span></div>
+    <button class="nav-item active" onclick="switchTab('recommend')">
+      <span class="nav-icon">&#9733;</span> Recommendations
+    </button>
+    <button class="nav-item" onclick="switchTab('map')">
+      <span class="nav-icon">&#9679;</span> Map &amp; heatmap
+    </button>
+    <button class="nav-item" onclick="switchTab('insights')">
+      <span class="nav-icon">&#9636;</span> Area insights
+    </button>
+    <button class="nav-item" onclick="switchTab('predict')">
+      <span class="nav-icon">&#9670;</span> Price predictor
+    </button>
+    <button class="nav-item" onclick="switchTab('browse')">
+      <span class="nav-icon">&#9776;</span> Browse listings
+    </button>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- ── RECOMMENDATIONS TAB ── -->
+    <div class="tab active" id="tab-recommend">
+      <div class="page-header">
+        <h1>Find your property</h1>
+        <p>Filter by location &amp; budget, ranked by similarity score</p>
+      </div>
+
+      <div class="card" style="margin-bottom:20px">
+        <div class="search-grid">
+          <div class="field">
+            <label>Location</label>
+            <input id="r-location" placeholder="e.g. gachibowli" value="gachibowli"/>
+          </div>
+          <div class="field">
+            <label>Min budget (₹)</label>
+            <input id="r-min" type="number" placeholder="2000000" value="2000000"/>
+          </div>
+          <div class="field">
+            <label>Max budget (₹)</label>
+            <input id="r-max" type="number" placeholder="8000000" value="8000000"/>
+          </div>
+          <div class="field">
+            <label>Bedrooms</label>
+            <select id="r-beds">
+              <option value="">Any</option>
+              <option value="1">1 BHK</option>
+              <option value="2">2 BHK</option>
+              <option value="3" selected>3 BHK</option>
+              <option value="4">4 BHK</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Property type</label>
+            <select id="r-type">
+              <option value="">Any</option>
+              <option value="flat">Flat</option>
+              <option value="villa">Villa</option>
+              <option value="plot">Plot</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Furnishing</label>
+            <select id="r-furnish">
+              <option value="">Any</option>
+              <option value="furnished">Furnished</option>
+              <option value="semi-furnished">Semi-furnished</option>
+              <option value="unfurnished">Unfurnished</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" style="margin-top:12px">
+          <label>Amenities (comma separated)</label>
+          <input id="r-amenities" placeholder="gym, pool, parking, security"/>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" id="search-btn" onclick="doSearch()">Search</button>
+        </div>
+      </div>
+
+      <div id="r-stats" class="stats-row" style="display:none">
+        <div class="stat stat-teal"><div class="stat-val" id="s-count">—</div><div class="stat-label">Matches found</div></div>
+        <div class="stat stat-purple"><div class="stat-val" id="s-avg">—</div><div class="stat-label">Avg price</div></div>
+        <div class="stat stat-amber"><div class="stat-val" id="s-best">—</div><div class="stat-label">Best match score</div></div>
+        <div class="stat stat-coral"><div class="stat-val" id="s-beds">—</div><div class="stat-label">Avg BHK</div></div>
+      </div>
+
+      <div id="r-results">
+        <div class="empty">
+          <div class="empty-icon">&#9733;</div>
+          <div>Fill in the form above and click Search</div>
+        </div>
+      </div>
+
+      <div id="r-map-wrap" style="display:none;margin-top:20px">
+        <div class="card-title">Listings on map</div>
+        <iframe id="r-map" class="map-frame" src="about:blank"></iframe>
+      </div>
+    </div>
+
+    <!-- ── MAP TAB ── -->
+    <div class="tab" id="tab-map">
+      <div class="page-header">
+        <h1>Map &amp; heatmap</h1>
+        <p>Price heatmap and listing clusters across Hyderabad</p>
+      </div>
+      <div class="map-tabs">
+        <button class="map-tab active" onclick="switchMap('heatmap', this)">Price heatmap</button>
+        <button class="map-tab" onclick="switchMap('clusters', this)">Listing clusters</button>
+      </div>
+      <iframe id="main-map" class="map-frame" src="/map/heatmap"></iframe>
+    </div>
+
+    <!-- ── INSIGHTS TAB ── -->
+    <div class="tab" id="tab-insights">
+      <div class="page-header">
+        <h1>Area insights</h1>
+        <p>Median price and listing count by locality</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Median price by area (₹ Lakh)</div>
+        <div class="chart-wrap"><canvas id="area-chart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ── PREDICT TAB ── -->
+    <div class="tab" id="tab-predict">
+      <div class="page-header">
+        <h1>Price predictor</h1>
+        <p>Estimate a property's market value</p>
+      </div>
+      <div class="card">
+        <div class="predict-grid">
+          <div class="field"><label>Location</label>
+            <input id="p-loc" value="gachibowli"/></div>
+          <div class="field"><label>Area (sq ft)</label>
+            <input id="p-area" type="number" value="1400"/></div>
+          <div class="field"><label>Bedrooms</label>
+            <select id="p-beds">
+              <option value="1">1 BHK</option>
+              <option value="2">2 BHK</option>
+              <option value="3" selected>3 BHK</option>
+              <option value="4">4 BHK</option>
+            </select></div>
+          <div class="field"><label>Property type</label>
+            <select id="p-type">
+              <option value="flat">Flat</option>
+              <option value="villa">Villa</option>
+              <option value="plot">Plot</option>
+            </select></div>
+          <div class="field"><label>Furnishing</label>
+            <select id="p-furnish">
+              <option value="semi-furnished">Semi-furnished</option>
+              <option value="furnished">Furnished</option>
+              <option value="unfurnished">Unfurnished</option>
+            </select></div>
+          <div class="field"><label>Age (years)</label>
+            <input id="p-age" type="number" value="2"/></div>
+          <div class="field"><label>Floor number</label>
+            <input id="p-floor" type="number" value="3"/></div>
+          <div class="field"><label>Total floors</label>
+            <input id="p-tfloor" type="number" value="10"/></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="doPredict()">Predict price</button>
+        </div>
+        <div id="predict-result" style="display:none" class="predict-result">
+          <div class="predict-price" id="pr-price">—</div>
+          <div class="predict-range" id="pr-range">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── BROWSE TAB ── -->
+    <div class="tab" id="tab-browse">
+      <div class="page-header">
+        <h1>Browse listings</h1>
+        <p>All properties with filters</p>
+      </div>
+      <div class="card" style="margin-bottom:20px">
+        <div class="search-grid">
+          <div class="field"><label>Location</label>
+            <input id="b-loc" placeholder="gachibowli"/></div>
+          <div class="field"><label>Min price (₹)</label>
+            <input id="b-min" type="number"/></div>
+          <div class="field"><label>Max price (₹)</label>
+            <input id="b-max" type="number"/></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="doBrowse(1)">Filter</button>
+        </div>
+      </div>
+      <div id="b-results">
+        <div class="empty"><div class="empty-icon">&#9776;</div><div>Loading listings…</div></div>
+      </div>
+      <div id="b-pagination" style="display:flex;gap:8px;margin-top:16px;justify-content:center"></div>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = '';
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (name === 'insights') loadInsights();
+  if (name === 'browse')   doBrowse(1);
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+function fmt(n) {
+  if (!n) return '—';
+  const l = n / 1e5;
+  return l >= 100 ? `₹${(l/100).toFixed(1)}Cr` : `₹${l.toFixed(1)}L`;
+}
+
+async function doSearch() {
+  const btn = document.getElementById('search-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  const amenities = document.getElementById('r-amenities').value
+    .split(',').map(s => s.trim()).filter(Boolean);
+
+  const body = {
+    location:      document.getElementById('r-location').value,
+    budget_min:    +document.getElementById('r-min').value,
+    budget_max:    +document.getElementById('r-max').value,
+    bedrooms:      document.getElementById('r-beds').value ? +document.getElementById('r-beds').value : null,
+    property_type: document.getElementById('r-type').value || null,
+    furnish:       document.getElementById('r-furnish').value || null,
+    amenities,
+    top_n: 12,
+  };
+
+  try {
+    const res  = await fetch(API + '/recommend', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+    const data = await res.json();
+
+    if (!res.ok) { toast(data.detail || 'Error'); return; }
+
+    renderResults(data.results);
+    renderStats(data.results);
+
+    if (data.map_url) {
+      document.getElementById('r-map').src = data.map_url;
+      document.getElementById('r-map-wrap').style.display = 'block';
+    }
+  } catch(e) {
+    toast('Could not reach API — is uvicorn running?');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Search';
+  }
+}
+
+function renderStats(results) {
+  if (!results.length) return;
+  const wrap = document.getElementById('r-stats');
+  wrap.style.display = 'grid';
+  const prices = results.map(r => r.PRICE).filter(Boolean);
+  const avg = prices.reduce((a,b)=>a+b,0)/prices.length;
+  const best = Math.max(...results.map(r => r.similarity_score || 0));
+  const beds = results.map(r=>r.BEDROOM_NUM).filter(Boolean);
+  const avgBeds = beds.length ? (beds.reduce((a,b)=>a+b,0)/beds.length).toFixed(1) : '—';
+
+  document.getElementById('s-count').textContent = results.length;
+  document.getElementById('s-avg').textContent   = fmt(avg);
+  document.getElementById('s-best').textContent  = (best*100).toFixed(0)+'%';
+  document.getElementById('s-beds').textContent  = avgBeds;
+}
+
+function renderResults(results) {
+  const wrap = document.getElementById('r-results');
+  if (!results.length) {
+    wrap.innerHTML = '<div class="empty"><div class="empty-icon">&#9733;</div><div>No listings matched — try relaxing your filters</div></div>';
+    return;
+  }
+  wrap.innerHTML = '<div class="results-grid">' + results.map(r => {
+    const price  = fmt(r.PRICE);
+    const score  = r.similarity_score ? (r.similarity_score*100).toFixed(0)+'%' : '';
+    const loc    = (r.location || r.AREA || '').replace(/\b\w/g,c=>c.toUpperCase());
+    const beds   = r.BEDROOM_NUM ? `${r.BEDROOM_NUM} BHK` : '';
+    const area   = r.AVG_AREA_SQFT ? `${Math.round(r.AVG_AREA_SQFT)} sqft` : '';
+    const type   = r.PROPERTY_TYPE || '';
+    const furn   = r.FURNISH || '';
+    const reason = r.match_reason || '';
+    const amen   = (r.AMENITIES || '').split(',').slice(0,4).join(', ');
+    return `<div class="result-card">
+      <div class="rc-top">
+        <div class="rc-price">${price}</div>
+        ${score ? `<span class="rc-score">${score} match</span>` : ''}
+      </div>
+      <div class="rc-loc">${loc}</div>
+      <div class="rc-tags">
+        ${beds ? `<span class="tag">${beds}</span>` : ''}
+        ${area ? `<span class="tag">${area}</span>` : ''}
+        ${type ? `<span class="tag">${type}</span>` : ''}
+        ${furn ? `<span class="tag">${furn}</span>` : ''}
+      </div>
+      ${reason ? `<div class="rc-reason">${reason}</div>` : ''}
+      ${amen ? `<div class="rc-amenities">${amen}</div>` : ''}
+    </div>`;
+  }).join('') + '</div>';
+}
+
+function switchMap(type, btn) {
+  document.querySelectorAll('.map-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('main-map').src = API + '/map/' + (type === 'heatmap' ? 'heatmap' : 'clusters');
+}
+
+let areaChart = null;
+async function loadInsights() {
+  try {
+    const res  = await fetch(API + '/insights/areas?top_n=15');
+    const data = await res.json();
+    const areas = data.data || [];
+    const labels = areas.map(a => (a.area||'').replace(/\b\w/g,c=>c.toUpperCase()));
+    const prices = areas.map(a => a.median_price_lakh || 0);
+    const counts = areas.map(a => a.listing_count || 0);
+
+    const ctx = document.getElementById('area-chart').getContext('2d');
+    if (areaChart) areaChart.destroy();
+    areaChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Median price (₹ Lakh)',
+          data: prices,
+          backgroundColor: '#1D9E7522',
+          borderColor: '#1D9E75',
+          borderWidth: 1.5,
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+          y: { grid: { color: '#e5e3db' }, ticks: { font: { size: 11 },
+            callback: v => '₹' + v + 'L' } }
+        }
+      }
+    });
+  } catch(e) { toast('Could not load insights'); }
+}
+
+async function doPredict() {
+  const body = {
+    location:      document.getElementById('p-loc').value,
+    area_sqft:     +document.getElementById('p-area').value,
+    bedrooms:      +document.getElementById('p-beds').value,
+    property_type: document.getElementById('p-type').value,
+    furnish:       document.getElementById('p-furnish').value,
+    age:           +document.getElementById('p-age').value,
+    floor:         +document.getElementById('p-floor').value,
+    total_floors:  +document.getElementById('p-tfloor').value,
+    amenity_count: 5,
+    landmarks: 4,
+    verified: 1,
+  };
+  try {
+    const res  = await fetch(API + '/predict', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+    const data = await res.json();
+    if (!res.ok) { toast(data.detail || 'Prediction failed'); return; }
+    const wrap = document.getElementById('predict-result');
+    wrap.style.display = 'block';
+    document.getElementById('pr-price').textContent = fmt(data.predicted_price) + ' (' + data.in_lakhs + ' L)';
+    document.getElementById('pr-range').textContent = `Range: ${fmt(data.low_estimate)} – ${fmt(data.high_estimate)}`;
+  } catch(e) { toast('Could not reach API'); }
+}
+
+let browsePage = 1;
+async function doBrowse(page) {
+  browsePage = page;
+  const params = new URLSearchParams({ page, page_size: 20 });
+  const loc = document.getElementById('b-loc').value;
+  const min = document.getElementById('b-min').value;
+  const max = document.getElementById('b-max').value;
+  if (loc) params.set('location', loc);
+  if (min) params.set('min_price', min);
+  if (max) params.set('max_price', max);
+
+  try {
+    const res  = await fetch(API + '/listings?' + params);
+    const data = await res.json();
+    const rows = (data.data || []).map(r =>
+      `<div class="result-card">
+        <div class="rc-top"><div class="rc-price">${fmt(r.PRICE)}</div></div>
+        <div class="rc-loc">${(r.location||'').replace(/\b\w/g,c=>c.toUpperCase())}</div>
+        <div class="rc-tags">
+          ${r.BEDROOM_NUM ? `<span class="tag">${r.BEDROOM_NUM} BHK</span>` : ''}
+          ${r.AVG_AREA_SQFT ? `<span class="tag">${Math.round(r.AVG_AREA_SQFT)} sqft</span>` : ''}
+          ${r.PROPERTY_TYPE ? `<span class="tag">${r.PROPERTY_TYPE}</span>` : ''}
+        </div>
+      </div>`
+    ).join('');
+
+    document.getElementById('b-results').innerHTML =
+      rows ? `<div class="results-grid">${rows}</div>` :
+      '<div class="empty"><div>No listings found</div></div>';
+
+    const pages = data.pages || 1;
+    const pag = document.getElementById('b-pagination');
+    pag.innerHTML = '';
+    for (let i = 1; i <= Math.min(pages, 8); i++) {
+      const btn = document.createElement('button');
+      btn.textContent = i;
+      btn.className = 'btn';
+      btn.style.cssText = `padding:6px 12px;background:${i===page?'var(--teal)':'var(--surface)'};color:${i===page?'#fff':'var(--muted)'};border:1px solid var(--border)`;
+      btn.onclick = () => doBrowse(i);
+      pag.appendChild(btn);
+    }
+  } catch(e) { toast('Could not reach API'); }
+}
+
+doBrowse(1);
+</script>
+</body>
+</html>
