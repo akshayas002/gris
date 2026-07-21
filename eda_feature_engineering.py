@@ -18,7 +18,11 @@ warnings.filterwarnings('ignore')
 # ─────────────────────────────────────────────
 # 0. Load Data
 # ─────────────────────────────────────────────
+<<<<<<< HEAD
 df = pd.read_csv('/home/claude/hyderabad.csv')
+=======
+df = pd.read_csv('./data/listings_latest.csv')
+>>>>>>> 31795b2 (updated the frontend)
 print(f"Dataset shape: {df.shape}")
 print(f"Columns: {list(df.columns)}\n")
 
@@ -373,7 +377,11 @@ ax11.set_title("Feature Correlation with Target")
 ax11.set_xlabel("Pearson r")
 ax11.axvline(0, color='black', linewidth=0.8)
 
+<<<<<<< HEAD
 plt.savefig('/mnt/user-data/outputs/eda_overview.png', dpi=150, bbox_inches='tight')
+=======
+plt.savefig('./data/eda_overview.png', dpi=150, bbox_inches='tight')
+>>>>>>> 31795b2 (updated the frontend)
 plt.close()
 print("Saved: eda_overview.png")
 
@@ -453,7 +461,11 @@ ax.set_title("Price/SqFt by Area Bucket")
 ax.set_xlabel("Area Bucket")
 
 plt.tight_layout()
+<<<<<<< HEAD
 plt.savefig('/mnt/user-data/outputs/feature_engineering_insights.png', dpi=150, bbox_inches='tight')
+=======
+plt.savefig('./data/feature_engineering_insights.png', dpi=150, bbox_inches='tight')
+>>>>>>> 31795b2 (updated the frontend)
 plt.close()
 print("Saved: feature_engineering_insights.png")
 
@@ -471,7 +483,11 @@ plt.colorbar(sc, ax=ax, label='₹/sq.ft.')
 ax.set_title("Hyderabad — Property Price Heatmap (by Location)", fontsize=15, fontweight='bold')
 ax.set_xlabel("Longitude")
 ax.set_ylabel("Latitude")
+<<<<<<< HEAD
 plt.savefig('/mnt/user-data/outputs/geo_price_map.png', dpi=150, bbox_inches='tight')
+=======
+plt.savefig('./data/geo_price_map.png', dpi=150, bbox_inches='tight')
+>>>>>>> 31795b2 (updated the frontend)
 plt.close()
 print("Saved: geo_price_map.png")
 
@@ -485,7 +501,11 @@ KEEP_COLS = NUMERIC_FEATURES + CATEGORICAL_FEATURES + [
 ]
 KEEP_COLS = [c for c in KEEP_COLS if c in df.columns]
 df_out = df[KEEP_COLS].copy()
+<<<<<<< HEAD
 df_out.to_csv('/mnt/user-data/outputs/hyderabad_engineered.csv', index=False)
+=======
+df_out.to_csv('./data/hyderabad_engineered.csv', index=False)
+>>>>>>> 31795b2 (updated the frontend)
 print(f"\nEngineered dataset saved: {df_out.shape}")
 print("\nFinal feature columns:")
 for c in KEEP_COLS:

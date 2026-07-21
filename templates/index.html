@@ -1,435 +1,1019 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Hyderabad Property Finder</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #f5f4f0; --surface: #ffffff; --border: #e2e0d8;
-    --text: #1a1a18; --muted: #6b6a64; --accent: #1D9E75;
-    --accent-light: #E1F5EE; --purple: #7F77DD; --purple-light: #EEEDFE;
-    --amber: #EF9F27; --amber-light: #FAEEDA; --coral: #D85A30;
-    --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,0.08);
-  }
-  body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
-  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; gap: 16px; height: 56px; }
-  header h1 { font-size: 16px; font-weight: 500; }
-  header span { font-size: 12px; color: var(--muted); background: var(--accent-light); color: var(--accent); padding: 2px 8px; border-radius: 999px; }
-  .tabs { display: flex; gap: 2px; padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--border); }
-  .tab { padding: 12px 18px; font-size: 13px; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s; user-select: none; }
-  .tab:hover { color: var(--text); }
-  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
-  .panel { display: none; padding: 24px; max-width: 1200px; margin: 0 auto; }
-  .panel.active { display: block; }
-  .grid2 { display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
-  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
-  label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 5px; margin-top: 12px; }
-  label:first-child { margin-top: 0; }
-  input, select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: var(--bg); color: var(--text); outline: none; transition: border-color .15s; }
-  input:focus, select:focus { border-color: var(--accent); }
-  .price-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .btn { width: 100%; padding: 10px; background: var(--accent); color: white; border: none; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; margin-top: 16px; transition: opacity .15s; }
-  .btn:hover { opacity: .88; }
-  .btn:disabled { opacity: .5; cursor: not-allowed; }
-  .btn-outline { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
-  .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  .results-header h3 { font-size: 14px; font-weight: 500; }
-  .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 500; }
-  .badge-teal { background: var(--accent-light); color: var(--accent); }
-  .badge-purple { background: var(--purple-light); color: var(--purple); }
-  .badge-amber { background: var(--amber-light); color: var(--amber); }
-  .listing-card { border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 10px; display: grid; grid-template-columns: 1fr auto; gap: 10px; cursor: pointer; transition: border-color .15s; }
-  .listing-card:hover { border-color: var(--accent); }
-  .listing-card h4 { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
-  .listing-card .meta { font-size: 12px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px; }
-  .listing-card .price { font-size: 15px; font-weight: 500; color: var(--accent); }
-  .listing-card .score-bar { width: 48px; height: 4px; background: var(--border); border-radius: 2px; margin-top: 4px; }
-  .listing-card .score-fill { height: 100%; border-radius: 2px; background: var(--accent); }
-  .score-label { font-size: 11px; color: var(--muted); text-align: right; }
-  .map-frame { width: 100%; height: 440px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-  .map-frame iframe { width: 100%; height: 100%; border: none; }
-  .map-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
-  .map-tab { padding: 6px 14px; font-size: 12px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: var(--surface); color: var(--muted); transition: all .15s; }
-  .map-tab.active { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
-  .predict-grid { display: grid; grid-template-columns: 360px 1fr; gap: 20px; align-items: start; }
-  .predict-result { text-align: center; padding: 32px 20px; }
-  .predict-result .main-price { font-size: 36px; font-weight: 500; color: var(--accent); }
-  .predict-result .range { font-size: 13px; color: var(--muted); margin-top: 6px; }
-  .predict-result .in-lakhs { font-size: 16px; color: var(--text); margin-top: 8px; }
-  .confidence { display: flex; gap: 14px; justify-content: center; margin-top: 20px; }
-  .conf-box { background: var(--bg); border-radius: 8px; padding: 12px 18px; text-align: center; }
-  .conf-box .val { font-size: 14px; font-weight: 500; }
-  .conf-box .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .empty { text-align: center; padding: 48px 20px; color: var(--muted); }
-  .empty p { font-size: 13px; margin-top: 8px; }
-  .loading { text-align: center; padding: 32px; color: var(--muted); font-size: 13px; }
-  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
-  .stat-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
-  .stat-box .val { font-size: 22px; font-weight: 500; }
-  .stat-box .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .amenity-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
-  .amenity-tag { font-size: 11px; padding: 3px 8px; background: var(--accent-light); color: var(--accent); border-radius: 999px; cursor: pointer; border: 1px solid transparent; }
-  .amenity-tag.selected { background: var(--accent); color: white; }
-  .chart-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-top: 20px; }
-  .chart-wrap h3 { font-size: 13px; font-weight: 500; margin-bottom: 14px; color: var(--muted); }
-  @media (max-width: 768px) {
-    .grid2, .predict-grid { grid-template-columns: 1fr; }
-    .grid3 { grid-template-columns: 1fr 1fr; }
-  }
-</style>
-</head>
-<body>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hyderabad Property Finder</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+  
+  <!-- Tailwind CSS Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['DM Mono', 'monospace'],
+          },
+          colors: {
+            forest: {
+              DEFAULT: '#0A5940',
+              50: '#E8F4F0',
+              100: '#C6E5D9',
+              200: '#8FCBB5',
+              400: '#1D9E75',
+              600: '#084A35',
+              700: '#063B2A',
+            },
+            sand: {
+              DEFAULT: '#F7F7F5',
+              50: '#FAFAF8',
+              100: '#F7F7F5',
+              200: '#EFEDE6',
+              300: '#E2E0D8',
+              400: '#C8C6BE',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-<header>
-  <h1>Hyderabad Property Finder</h1>
-  <span>Recommendation System</span>
-</header>
-
-<div class="tabs">
-  <div class="tab active" onclick="switchTab('recommend')">Recommendations</div>
-  <div class="tab" onclick="switchTab('map')">Map & heatmap</div>
-  <div class="tab" onclick="switchTab('predict')">Price predictor</div>
-  <div class="tab" onclick="switchTab('insights')">Insights</div>
-</div>
-
-<!-- ── TAB 1: Recommendations ── -->
-<div id="tab-recommend" class="panel active">
-  <div class="grid2">
-    <div>
-      <div class="card">
-        <label>Location / area</label>
-        <input type="text" id="r-location" placeholder="e.g. Gachibowli" value="gachibowli"/>
-
-        <label>Budget range (₹)</label>
-        <div class="price-row">
-          <input type="number" id="r-min" placeholder="Min" value="3000000"/>
-          <input type="number" id="r-max" placeholder="Max" value="8000000"/>
-        </div>
-
-        <label>Bedrooms</label>
-        <select id="r-beds">
-          <option value="">Any</option>
-          <option value="1">1 BHK</option>
-          <option value="2">2 BHK</option>
-          <option value="3" selected>3 BHK</option>
-          <option value="4">4 BHK</option>
-          <option value="5">5+ BHK</option>
-        </select>
-
-        <label>Property type</label>
-        <select id="r-type">
-          <option value="">Any</option>
-          <option value="flat">Flat / Apartment</option>
-          <option value="villa">Villa</option>
-          <option value="plot">Plot</option>
-          <option value="house">Independent house</option>
-        </select>
-
-        <label>Furnishing</label>
-        <select id="r-furnish">
-          <option value="">Any</option>
-          <option value="furnished">Furnished</option>
-          <option value="semi-furnished">Semi-furnished</option>
-          <option value="unfurnished">Unfurnished</option>
-        </select>
-
-        <label>Amenities (select all that matter)</label>
-        <div class="amenity-tags">
-          <span class="amenity-tag" onclick="toggleAmenity(this)">Gym</span>
-          <span class="amenity-tag" onclick="toggleAmenity(this)">Swimming pool</span>
-          <span class="amenity-tag" onclick="toggleAmenity(this)">Parking</span>
-          <span class="amenity-tag" onclick="toggleAmenity(this)">Security</span>
-          <span class="amenity-tag" onclick="toggleAmenity(this)">Lift</span>
-          <span class="amenity-tag" onclick="toggleAmenity(this)">Club house</span>
-          <span class="amenity-tag" onclick="toggleAmenity(this)">Power backup</span>
-          <span class="amenity-tag" onclick="toggleAmenity(this)">Garden</span>
-        </div>
-
-        <button class="btn" onclick="getRecommendations()">Find properties</button>
-      </div>
-    </div>
-
-    <div>
-      <div id="recommend-results">
-        <div class="empty">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".3"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          <p>Set your preferences and click Find properties</p>
-        </div>
-      </div>
-
-      <div id="rec-map-wrap" style="display:none; margin-top:16px;">
-        <div class="map-frame"><iframe id="rec-map-frame" src=""></iframe></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ── TAB 2: Map ── -->
-<div id="tab-map" class="panel">
-  <div class="map-tabs">
-    <div class="map-tab active" onclick="switchMap('heatmap', this)">Price heatmap</div>
-    <div class="map-tab" onclick="switchMap('clusters', this)">Listing clusters</div>
-  </div>
-  <div class="map-frame">
-    <iframe id="main-map-frame" src="/map/heatmap"></iframe>
-  </div>
-  <p style="font-size:12px; color:var(--muted); margin-top:10px;">
-    Heatmap — warmer colours indicate higher property prices. Cluster map — colour-coded zones by geographic density.
-  </p>
-</div>
-
-<!-- ── TAB 3: Price predictor ── -->
-<div id="tab-predict" class="panel">
-  <div class="predict-grid">
-    <div class="card">
-      <label>Location</label>
-      <input type="text" id="p-location" placeholder="e.g. gachibowli" value="gachibowli"/>
-
-      <label>Bedrooms</label>
-      <select id="p-beds">
-        <option value="1">1 BHK</option>
-        <option value="2">2 BHK</option>
-        <option value="3" selected>3 BHK</option>
-        <option value="4">4 BHK</option>
-      </select>
-
-      <label>Area (sq ft)</label>
-      <input type="number" id="p-area" value="1400"/>
-
-      <label>Property type</label>
-      <select id="p-type">
-        <option value="flat">Flat</option>
-        <option value="villa">Villa</option>
-        <option value="house">House</option>
-      </select>
-
-      <label>Furnishing</label>
-      <select id="p-furnish">
-        <option value="furnished">Furnished</option>
-        <option value="semi-furnished" selected>Semi-furnished</option>
-        <option value="unfurnished">Unfurnished</option>
-      </select>
-
-      <div class="price-row">
-        <div>
-          <label>Age (years)</label>
-          <input type="number" id="p-age" value="2"/>
-        </div>
-        <div>
-          <label>Floor number</label>
-          <input type="number" id="p-floor" value="4"/>
-        </div>
-      </div>
-
-      <div class="price-row">
-        <div>
-          <label>Total floors</label>
-          <input type="number" id="p-totalfloor" value="12"/>
-        </div>
-        <div>
-          <label>Nearby landmarks</label>
-          <input type="number" id="p-landmarks" value="5"/>
-        </div>
-      </div>
-
-      <button class="btn" onclick="predictPrice()">Predict price</button>
-    </div>
-
-    <div class="card">
-      <div id="predict-result">
-        <div class="empty">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".3"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-          <p>Fill in the property details and click Predict price</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ── TAB 4: Insights ── -->
-<div id="tab-insights" class="panel">
-  <div class="stat-row" id="stat-row">
-    <div class="stat-box"><div class="val" id="s-total">—</div><div class="lbl">Total listings</div></div>
-    <div class="stat-box"><div class="val" id="s-areas">—</div><div class="lbl">Localities covered</div></div>
-    <div class="stat-box"><div class="val" id="s-median">—</div><div class="lbl">Median price</div></div>
-  </div>
-  <div class="chart-wrap">
-    <h3>Median price by locality (top 15)</h3>
-    <canvas id="area-chart" height="90"></canvas>
-  </div>
-  <div class="chart-wrap" style="margin-top:16px;">
-    <h3>Listing count by locality</h3>
-    <canvas id="count-chart" height="90"></canvas>
-  </div>
-</div>
-
-<script>
-const API = '';
-
-function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['recommend','map','predict','insights'][i] === name));
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  if (name === 'insights') loadInsights();
-}
-
-function switchMap(type, el) {
-  document.querySelectorAll('.map-tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('main-map-frame').src = `/map/${type}`;
-}
-
-function toggleAmenity(el) { el.classList.toggle('selected'); }
-
-function lakhs(v) {
-  if (!v) return '—';
-  const l = v / 1e5;
-  return l >= 100 ? `₹${(l/100).toFixed(2)} Cr` : `₹${l.toFixed(1)}L`;
-}
-
-async function getRecommendations() {
-  const amenities = [...document.querySelectorAll('.amenity-tag.selected')].map(el => el.textContent.trim());
-  const payload = {
-    location:      document.getElementById('r-location').value || 'gachibowli',
-    budget_min:    parseFloat(document.getElementById('r-min').value) || 0,
-    budget_max:    parseFloat(document.getElementById('r-max').value) || 1e8,
-    bedrooms:      parseInt(document.getElementById('r-beds').value) || null,
-    property_type: document.getElementById('r-type').value || null,
-    furnish:       document.getElementById('r-furnish').value || null,
-    amenities,
-    top_n: 10,
-  };
-
-  const container = document.getElementById('recommend-results');
-  container.innerHTML = '<div class="loading">Finding properties...</div>';
-
-  try {
-    const res  = await fetch(`${API}/recommend`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-    const data = await res.json();
-
-    if (!data.results || data.results.length === 0) {
-      container.innerHTML = '<div class="empty"><p>No listings matched your filters. Try widening the budget or changing location.</p></div>';
-      return;
+  <!-- Custom Styles (for animations, custom scrollbars, range sliders, etc.) -->
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #C8C6BE;
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #0A5940;
     }
 
-    const header = `<div class="results-header"><h3>${data.count} properties found</h3><span class="badge badge-teal">${payload.location}</span></div>`;
-    const cards  = data.results.map(r => {
-      const score = Math.round((r.similarity_score || 0) * 100);
-      const beds  = r.BEDROOM_NUM ? `${r.BEDROOM_NUM} BHK` : '';
-      const area  = r.AVG_AREA_SQFT ? `${Math.round(r.AVG_AREA_SQFT)} sqft` : '';
-      const type  = r.PROPERTY_TYPE || '';
-      const loc   = (r.location || r.AREA || '').replace(/\b\w/g, c => c.toUpperCase());
-      return `
-        <div class="listing-card">
+    /* Staggered Card Entry Animation */
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .card-enter {
+      opacity: 0;
+      animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Skeleton Loading Shimmer */
+    @keyframes shimmer {
+      0% {
+        background-position: -200% 0;
+      }
+      100% {
+        background-position: 200% 0;
+      }
+    }
+    .shimmer {
+      background: linear-gradient(90deg, #F0EDE6 25%, #E2E0D8 50%, #F0EDE6 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite linear;
+    }
+
+    /* Ring SVG animation */
+    .ring-fill {
+      transition: stroke-dashoffset 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+  </style>
+</head>
+<body class="bg-sand-100 text-gray-900 font-sans min-h-screen antialiased flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-sand-300 sticky top-0 z-30 shrink-0">
+    <div class="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 bg-forest rounded-xl flex items-center justify-center shadow-md shadow-forest/10 hover:scale-105 transition-transform duration-200">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </div>
+        <div>
+          <span class="font-bold text-base tracking-tight text-gray-950 block leading-none">PropFind<span class="text-forest">HYD</span></span>
+          <span class="text-[10px] text-gray-400 font-medium tracking-wide">HYDERABAD REAL ESTATE RECOMMENDATION</span>
+        </div>
+      </div>
+      
+      <!-- Nav Tabs -->
+      <nav class="flex items-center gap-1">
+        <button id="nav-recommend" class="px-4 py-2 text-sm font-semibold rounded-lg text-forest bg-forest-50 border border-forest/10 transition-all duration-200" onclick="switchTab('recommend')">Recommendations</button>
+        <button id="nav-map" class="px-4 py-2 text-sm font-medium rounded-lg text-gray-500 hover:text-gray-900 hover:bg-sand-50 transition-all duration-200" onclick="switchTab('map')">Map & Heatmap</button>
+        <button id="nav-predict" class="px-4 py-2 text-sm font-medium rounded-lg text-gray-500 hover:text-gray-900 hover:bg-sand-50 transition-all duration-200" onclick="switchTab('predict')">Price Predictor</button>
+        <button id="nav-insights" class="px-4 py-2 text-sm font-medium rounded-lg text-gray-500 hover:text-gray-900 hover:bg-sand-50 transition-all duration-200" onclick="switchTab('insights')">Insights</button>
+      </nav>
+
+      <!-- Status Indicator -->
+      <div id="status-pill" class="flex items-center gap-2 bg-sand-50 border border-sand-300 rounded-full px-3 py-1.5 text-xs text-gray-500 transition-all duration-300">
+        <span id="status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+        <span id="status-text" class="font-medium tracking-wide">Connecting...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main View Area -->
+  <main class="flex-1 max-w-[1400px] w-full mx-auto p-6 flex flex-col min-h-0">
+    
+    <!-- ── TAB 1: Recommendations ── -->
+    <div id="tab-recommend" class="tab-panel flex flex-col lg:flex-row gap-6 items-stretch flex-1">
+      
+      <!-- Sidebar Filters -->
+      <div class="w-full lg:w-[320px] bg-white border border-sand-300 rounded-2xl p-5 shadow-sm shrink-0 flex flex-col justify-between self-start">
+        <div class="space-y-4">
+          <div class="border-b border-sand-200 pb-3">
+            <h3 class="font-bold text-sm text-gray-950 uppercase tracking-wider">Search Preferences</h3>
+            <p class="text-[11px] text-gray-400 mt-0.5">Find matching homes in Hyderabad</p>
+          </div>
+
+          <!-- Location input -->
           <div>
-            <h4>${type} ${beds ? '· ' + beds : ''}</h4>
-            <div style="font-size:12px; color:var(--muted)">${loc}</div>
-            <div class="meta">
-              ${area ? `<span>${area}</span>` : ''}
-              ${r.FURNISH ? `<span>${r.FURNISH}</span>` : ''}
-              ${r.match_reason ? `<span class="badge badge-purple">${r.match_reason}</span>` : ''}
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Locality</label>
+            <div class="relative">
+              <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+              <input type="text" id="r-location" placeholder="e.g. Gachibowli" value="gachibowli"
+                class="w-full pl-9 pr-4 py-2.5 text-sm border border-sand-300 rounded-xl bg-sand-50 text-gray-900 focus:outline-none focus:border-forest focus:bg-white focus:ring-2 focus:ring-forest/5 transition-all duration-200" />
             </div>
           </div>
-          <div style="text-align:right">
-            <div class="price">${lakhs(r.PRICE)}</div>
-            <div class="score-label">${score}% match</div>
-            <div class="score-bar"><div class="score-fill" style="width:${score}%"></div></div>
+
+          <!-- Budget Range inputs in Lakhs -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Budget (₹ Lakhs)</label>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <span class="text-[9px] text-gray-400 font-bold block mb-0.5">MIN LAKH</span>
+                <input type="number" id="r-min" placeholder="Min" value="30"
+                  class="w-full px-3 py-2 text-sm border border-sand-300 rounded-xl bg-sand-50 text-gray-900 focus:outline-none focus:border-forest focus:bg-white focus:ring-2 focus:ring-forest/5 transition-all duration-200" />
+              </div>
+              <div>
+                <span class="text-[9px] text-gray-400 font-bold block mb-0.5">MAX LAKH</span>
+                <input type="number" id="r-max" placeholder="Max" value="80"
+                  class="w-full px-3 py-2 text-sm border border-sand-300 rounded-xl bg-sand-50 text-gray-900 focus:outline-none focus:border-forest focus:bg-white focus:ring-2 focus:ring-forest/5 transition-all duration-200" />
+              </div>
+            </div>
           </div>
-        </div>`;
-    }).join('');
 
-    container.innerHTML = header + cards;
+          <!-- Bedrooms Interactive Pills -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Bedrooms (BHK)</label>
+            <div class="flex flex-wrap gap-1.5" id="beds-pills-container">
+              <button type="button" class="bed-pill px-3 py-2 text-xs font-medium border border-sand-300 rounded-lg text-gray-600 hover:border-forest hover:text-forest hover:bg-sand-50 transition-all duration-150" data-val="">Any</button>
+              <button type="button" class="bed-pill px-3 py-2 text-xs font-medium border border-sand-300 rounded-lg text-gray-600 hover:border-forest hover:text-forest hover:bg-sand-50 transition-all duration-150" data-val="1">1 BHK</button>
+              <button type="button" class="bed-pill px-3 py-2 text-xs font-medium border border-sand-300 rounded-lg text-gray-600 hover:border-forest hover:text-forest hover:bg-sand-50 transition-all duration-150" data-val="2">2 BHK</button>
+              <button type="button" class="bed-pill active-pill px-3 py-2 text-xs font-semibold border border-forest bg-forest text-white rounded-lg transition-all duration-150" data-val="3">3 BHK</button>
+              <button type="button" class="bed-pill px-3 py-2 text-xs font-medium border border-sand-300 rounded-lg text-gray-600 hover:border-forest hover:text-forest hover:bg-sand-50 transition-all duration-150" data-val="4">4 BHK</button>
+              <button type="button" class="bed-pill px-3 py-2 text-xs font-medium border border-sand-300 rounded-lg text-gray-600 hover:border-forest hover:text-forest hover:bg-sand-50 transition-all duration-150" data-val="5">5+ BHK</button>
+            </div>
+          </div>
 
-    if (data.map_url) {
-      document.getElementById('rec-map-wrap').style.display = 'block';
-      document.getElementById('rec-map-frame').src = data.map_url;
-    }
-  } catch(e) {
-    container.innerHTML = `<div class="empty"><p>Could not connect to API. Make sure the server is running on port 8000.</p></div>`;
-  }
-}
+          <!-- Property Type Dropdown -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Property Type</label>
+            <select id="r-type"
+              class="w-full px-3.5 py-2.5 text-sm border border-sand-300 rounded-xl bg-sand-50 text-gray-900 focus:outline-none focus:border-forest focus:bg-white focus:ring-2 focus:ring-forest/5 transition-all duration-200">
+              <option value="">Any Type</option>
+              <option value="flat">Flat / Apartment</option>
+              <option value="villa">Villa</option>
+              <option value="plot">Plot</option>
+              <option value="house">Independent House</option>
+            </select>
+          </div>
 
-async function predictPrice() {
-  const payload = {
-    location:      document.getElementById('p-location').value,
-    bedrooms:      parseInt(document.getElementById('p-beds').value),
-    area_sqft:     parseFloat(document.getElementById('p-area').value),
-    property_type: document.getElementById('p-type').value,
-    furnish:       document.getElementById('p-furnish').value,
-    age:           parseInt(document.getElementById('p-age').value) || 0,
-    floor:         parseInt(document.getElementById('p-floor').value) || 1,
-    total_floors:  parseInt(document.getElementById('p-totalfloor').value) || 5,
-    landmarks:     parseInt(document.getElementById('p-landmarks').value) || 3,
-    amenity_count: 5,
-    verified:      1,
-  };
+          <!-- Furnishing Pills -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Furnishing</label>
+            <div class="flex flex-wrap gap-1.5" id="furnish-pills-container">
+              <button type="button" class="furnish-pill active-pill px-3.5 py-2 text-xs font-semibold border border-forest bg-forest text-white rounded-lg transition-all duration-150" data-val="">Any</button>
+              <button type="button" class="furnish-pill px-3.5 py-2 text-xs font-medium border border-sand-300 rounded-lg text-gray-600 hover:border-forest hover:text-forest hover:bg-sand-50 transition-all duration-150" data-val="furnished">Furnished</button>
+              <button type="button" class="furnish-pill px-3.5 py-2 text-xs font-medium border border-sand-300 rounded-lg text-gray-600 hover:border-forest hover:text-forest hover:bg-sand-50 transition-all duration-150" data-val="semi-furnished">Semi</button>
+              <button type="button" class="furnish-pill px-3.5 py-2 text-xs font-medium border border-sand-300 rounded-lg text-gray-600 hover:border-forest hover:text-forest hover:bg-sand-50 transition-all duration-150" data-val="unfurnished">Unfurnished</button>
+            </div>
+          </div>
 
-  const el = document.getElementById('predict-result');
-  el.innerHTML = '<div class="loading">Calculating...</div>';
-
-  try {
-    const res  = await fetch(`${API}/predict`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-    const data = await res.json();
-
-    if (data.detail) {
-      el.innerHTML = `<div class="empty"><p>${data.detail}</p></div>`;
-      return;
-    }
-
-    el.innerHTML = `
-      <div class="predict-result">
-        <div style="font-size:12px; color:var(--muted); margin-bottom:8px;">${payload.bedrooms} BHK · ${payload.area_sqft} sqft · ${payload.location}</div>
-        <div class="main-price">${lakhs(data.predicted_price)}</div>
-        <div class="in-lakhs">₹${data.predicted_price.toLocaleString('en-IN')}</div>
-        <div class="range">Range: ${lakhs(data.low_estimate)} – ${lakhs(data.high_estimate)}</div>
-        <div class="confidence">
-          <div class="conf-box"><div class="val">${lakhs(data.low_estimate)}</div><div class="lbl">Low estimate</div></div>
-          <div class="conf-box"><div class="val" style="color:var(--accent)">${lakhs(data.predicted_price)}</div><div class="lbl">Predicted</div></div>
-          <div class="conf-box"><div class="val">${lakhs(data.high_estimate)}</div><div class="lbl">High estimate</div></div>
+          <!-- Amenities Clickable Tags -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Amenities Needed</label>
+            <div class="flex flex-wrap gap-1.5" id="amenity-tags-container">
+              <span class="amenity-tag px-2.5 py-1 text-xs font-medium border border-sand-300 bg-white text-gray-600 rounded-lg cursor-pointer hover:border-forest hover:text-forest hover:bg-sand-50 transition-all duration-150" onclick="toggleAmenity(this)">Gym</span>
+              <span class="amenity-tag px-2.5 py-1 text-xs font-medium border border-sand-300 bg-white text-gray-600 rounded-lg cursor-pointer hover:border-forest hover:text-forest hover:bg-sand-50 transition-all duration-150" onclick="toggleAmenity(this)">Swimming pool</span>
+              <span class="amenity-tag px-2.5 py-1 text-xs font-medium border border-sand-300 bg-white text-gray-600 rounded-lg cursor-pointer hover:border-forest hover:text-forest hover:bg-sand-50 transition-all duration-150" onclick="toggleAmenity(this)">Parking</span>
+              <span class="amenity-tag px-2.5 py-1 text-xs font-medium border border-sand-300 bg-white text-gray-600 rounded-lg cursor-pointer hover:border-forest hover:text-forest hover:bg-sand-50 transition-all duration-150" onclick="toggleAmenity(this)">Security</span>
+              <span class="amenity-tag px-2.5 py-1 text-xs font-medium border border-sand-300 bg-white text-gray-600 rounded-lg cursor-pointer hover:border-forest hover:text-forest hover:bg-sand-50 transition-all duration-150" onclick="toggleAmenity(this)">Lift</span>
+              <span class="amenity-tag px-2.5 py-1 text-xs font-medium border border-sand-300 bg-white text-gray-600 rounded-lg cursor-pointer hover:border-forest hover:text-forest hover:bg-sand-50 transition-all duration-150" onclick="toggleAmenity(this)">Club house</span>
+              <span class="amenity-tag px-2.5 py-1 text-xs font-medium border border-sand-300 bg-white text-gray-600 rounded-lg cursor-pointer hover:border-forest hover:text-forest hover:bg-sand-50 transition-all duration-150" onclick="toggleAmenity(this)">Power backup</span>
+              <span class="amenity-tag px-2.5 py-1 text-xs font-medium border border-sand-300 bg-white text-gray-600 rounded-lg cursor-pointer hover:border-forest hover:text-forest hover:bg-sand-50 transition-all duration-150" onclick="toggleAmenity(this)">Garden</span>
+            </div>
+          </div>
         </div>
-      </div>`;
-  } catch(e) {
-    el.innerHTML = `<div class="empty"><p>API not reachable. Start the server with: uvicorn app:app --reload</p></div>`;
-  }
-}
 
-let chartsLoaded = false;
-async function loadInsights() {
-  if (chartsLoaded) return;
-  try {
-    const res  = await fetch(`${API}/insights/areas?top_n=15`);
-    const data = await res.json();
-    const rows = data.data || [];
+        <button onclick="getRecommendations()"
+          class="w-full mt-6 bg-forest text-white py-3 rounded-xl text-sm font-semibold hover:bg-forest-600 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2 shadow-lg shadow-forest/10">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+          Search Matches
+        </button>
+      </div>
 
-    document.getElementById('s-total').textContent = rows.reduce((s,r) => s + (r.listing_count||0), 0).toLocaleString();
-    document.getElementById('s-areas').textContent = rows.length;
-    const prices = rows.map(r => r.median_price_lakh).filter(Boolean);
-    const median = prices.sort((a,b)=>a-b)[Math.floor(prices.length/2)];
-    document.getElementById('s-median').textContent = median ? `₹${median}L` : '—';
+      <!-- Results View -->
+      <div class="flex-1 flex flex-col min-h-0">
+        
+        <!-- Interactive Recommendation Map Frame (collapsible) -->
+        <div id="rec-map-wrap" class="hidden mb-4 overflow-hidden bg-white border border-sand-300 rounded-2xl shadow-sm h-72">
+          <iframe id="rec-map-frame" src="" class="w-full h-full border-0"></iframe>
+        </div>
 
-    const labels = rows.map(r => (r.area||'').replace(/\b\w/g, c=>c.toUpperCase()));
-    const TEAL = '#1D9E75', PURPLE = '#7F77DD';
+        <!-- Result Cards Container -->
+        <div class="flex-1 overflow-y-auto" id="recommend-results">
+          <!-- Empty State -->
+          <div class="h-full flex flex-col items-center justify-center text-center p-12 bg-white border border-sand-300 rounded-2xl">
+            <div class="w-16 h-16 bg-sand-50 border border-sand-200 rounded-2xl flex items-center justify-center text-forest mb-4 shadow-sm">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+            </div>
+            <h4 class="font-bold text-gray-900 text-base">Find Your Match</h4>
+            <p class="text-sm text-gray-500 mt-1 max-w-sm">Adjust filters on the sidebar and click Search Matches. Recommend matches will list here with details.</p>
+          </div>
+        </div>
 
-    new Chart(document.getElementById('area-chart'), {
-      type: 'bar',
-      data: { labels, datasets: [{ label: 'Median price (Lakhs)', data: rows.map(r=>r.median_price_lakh), backgroundColor: TEAL + '99', borderColor: TEAL, borderWidth: 1 }] },
-      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => '₹'+v+'L' } } } }
+        <!-- Shimmer Skeleton templates (hidden initially) -->
+        <template id="skeleton-card-template">
+          <div class="bg-white border border-sand-300 rounded-2xl p-5 mb-3 flex gap-5 items-center">
+            <!-- circle skeleton -->
+            <div class="w-[56px] h-[56px] rounded-full shimmer shrink-0"></div>
+            <!-- details skeleton -->
+            <div class="flex-1 space-y-3">
+              <div class="flex gap-2 items-center">
+                <div class="h-4 w-16 shimmer rounded"></div>
+                <div class="h-4 w-24 shimmer rounded"></div>
+              </div>
+              <div class="h-4 w-48 shimmer rounded"></div>
+              <div class="flex gap-1.5">
+                <div class="h-3 w-16 shimmer rounded"></div>
+                <div class="h-3 w-20 shimmer rounded"></div>
+              </div>
+            </div>
+            <!-- price skeleton -->
+            <div class="flex flex-col items-end space-y-2 shrink-0">
+              <div class="h-6 w-24 shimmer rounded"></div>
+              <div class="h-3.5 w-16 shimmer rounded"></div>
+            </div>
+          </div>
+        </template>
+      </div>
+
+    </div>
+
+    <!-- ── TAB 2: Map & Heatmap ── -->
+    <div id="tab-map" class="tab-panel hidden flex-1 flex flex-col min-h-0">
+      <div class="bg-white border border-sand-300 rounded-2xl overflow-hidden flex flex-col flex-1 shadow-sm">
+        
+        <!-- Map Type Switcher -->
+        <div class="px-5 py-3 border-b border-sand-300 flex items-center justify-between bg-white shrink-0 flex-wrap gap-4">
+          <div class="flex items-center gap-1.5 bg-sand-100 p-1 rounded-xl border border-sand-300">
+            <button id="map-tab-heatmap" class="px-4 py-2 text-xs font-semibold rounded-lg bg-white text-gray-900 shadow-sm border border-sand-300/40 transition-all duration-200" onclick="switchMap('heatmap', this)">Price Heatmap</button>
+            <button id="map-tab-clusters" class="px-4 py-2 text-xs font-medium rounded-lg text-gray-500 hover:text-gray-900 transition-all duration-200" onclick="switchMap('clusters', this)">Listing Clusters</button>
+          </div>
+
+          <!-- Heatmap Legend Overlay -->
+          <div id="map-legend-container" class="flex items-center gap-4">
+            <div class="flex items-center gap-2" id="heatmap-legend">
+              <span class="text-xs font-medium text-gray-400">Price Intensity</span>
+              <div class="flex items-center gap-1.5 font-bold text-[9px] text-gray-400 tracking-wider">
+                <span>LOW</span>
+                <div class="w-20 h-2.5 rounded-full" style="background: linear-gradient(90deg, #1D9E75, #EF9F27, #D85A30, #E24B4A)"></div>
+                <span>HIGH</span>
+              </div>
+            </div>
+            
+            <div class="hidden flex items-center gap-2" id="clusters-legend">
+              <span class="text-xs font-medium text-gray-400">Centroid Zones</span>
+              <div class="flex items-center gap-1">
+                <span class="w-2.5 h-2.5 rounded-full bg-forest"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-[#7F77DD]"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-[#D85A30]"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-[#378ADD]"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-[#EF9F27]"></span>
+                <span class="text-[10px] text-gray-400 font-medium ml-1">10 Clusters</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Iframe container -->
+        <div class="flex-1 relative min-h-[460px]">
+          <iframe id="main-map-frame" src="/map/heatmap" class="w-full h-full border-0 absolute inset-0"></iframe>
+        </div>
+
+        <!-- Map Footer info -->
+        <div class="px-5 py-3 border-t border-sand-300 bg-sand-50/50 flex justify-between items-center text-xs text-gray-400 shrink-0">
+          <p>Maps are color-coded by median prices and localized density.</p>
+          <button onclick="document.getElementById('main-map-frame').src += ''" class="flex items-center gap-1 hover:text-forest font-semibold transition-colors duration-150">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 11-.57-8.38l5.67-5.67"/>
+            </svg>
+            Reload Map
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB 3: Price Predictor ── -->
+    <div id="tab-predict" class="tab-panel hidden flex-1 flex flex-col md:flex-row gap-6">
+      
+      <!-- Prediction Form Input -->
+      <div class="w-full md:w-[380px] bg-white border border-sand-300 rounded-2xl p-6 shadow-sm shrink-0 space-y-4 self-start">
+        <div class="border-b border-sand-200 pb-3">
+          <h3 class="font-bold text-sm text-gray-950 uppercase tracking-wider">Predict Market Value</h3>
+          <p class="text-[11px] text-gray-400 mt-0.5">Estimate property price using trained ML model</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Locality</label>
+            <input type="text" id="p-location" value="gachibowli"
+              class="w-full px-3 py-2 text-sm border border-sand-300 rounded-xl bg-sand-50 focus:outline-none focus:border-forest focus:bg-white focus:ring-2 focus:ring-forest/5 transition-all duration-200"/>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Bedrooms</label>
+            <select id="p-beds"
+              class="w-full px-3 py-2 text-sm border border-sand-300 rounded-xl bg-sand-50 focus:outline-none focus:border-forest focus:bg-white transition-all duration-200">
+              <option value="1">1 BHK</option>
+              <option value="2">2 BHK</option>
+              <option value="3" selected>3 BHK</option>
+              <option value="4">4 BHK</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Area (sq ft)</label>
+          <input type="number" id="p-area" value="1400"
+            class="w-full px-3.5 py-2 text-sm border border-sand-300 rounded-xl bg-sand-50 focus:outline-none focus:border-forest focus:bg-white focus:ring-2 focus:ring-forest/5 transition-all duration-200"/>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Property Type</label>
+            <select id="p-type"
+              class="w-full px-3 py-2.5 text-sm border border-sand-300 rounded-xl bg-sand-50 focus:outline-none focus:border-forest focus:bg-white transition-all">
+              <option value="flat">Flat</option>
+              <option value="villa">Villa</option>
+              <option value="house">House</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Furnishing</label>
+            <select id="p-furnish"
+              class="w-full px-3 py-2.5 text-sm border border-sand-300 rounded-xl bg-sand-50 focus:outline-none focus:border-forest focus:bg-white transition-all">
+              <option value="furnished">Furnished</option>
+              <option value="semi-furnished" selected>Semi-Furnished</option>
+              <option value="unfurnished">Unfurnished</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Age (years)</label>
+            <input type="number" id="p-age" value="2"
+              class="w-full px-3 py-2 text-sm border border-sand-300 rounded-xl bg-sand-50 focus:outline-none focus:border-forest focus:bg-white"/>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Floor No.</label>
+            <input type="number" id="p-floor" value="4"
+              class="w-full px-3 py-2 text-sm border border-sand-300 rounded-xl bg-sand-50 focus:outline-none focus:border-forest focus:bg-white"/>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Total Floors</label>
+            <input type="number" id="p-totalfloor" value="12"
+              class="w-full px-3 py-2 text-sm border border-sand-300 rounded-xl bg-sand-50 focus:outline-none focus:border-forest focus:bg-white"/>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Nearby Landmarks</label>
+            <input type="number" id="p-landmarks" value="5"
+              class="w-full px-3 py-2 text-sm border border-sand-300 rounded-xl bg-sand-50 focus:outline-none focus:border-forest focus:bg-white"/>
+          </div>
+        </div>
+
+        <button onclick="predictPrice()"
+          class="w-full bg-forest text-white py-3 rounded-xl text-sm font-semibold hover:bg-forest-600 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2 shadow-lg shadow-forest/10">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          Predict Price
+        </button>
+      </div>
+
+      <!-- Prediction Output Result -->
+      <div class="flex-1 bg-white border border-sand-300 rounded-2xl p-6 shadow-sm flex flex-col items-center justify-center min-h-[400px]" id="predict-result-container">
+        <div id="predict-empty" class="text-center max-w-sm">
+          <div class="w-16 h-16 bg-sand-50 border border-sand-200 rounded-2xl flex items-center justify-center text-forest mb-4 mx-auto shadow-sm">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <line x1="12" y1="1" x2="12" y2="23"/>
+              <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+            </svg>
+          </div>
+          <h4 class="font-bold text-gray-900 text-base">Valuation Engine</h4>
+          <p class="text-sm text-gray-500 mt-1">Enter property specifications on the left panel to estimate the median selling price.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── TAB 4: Insights ── -->
+    <div id="tab-insights" class="tab-panel hidden flex-1 flex flex-col gap-6">
+      
+      <!-- Stats Row -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0" id="insights-stats-container">
+        <div class="bg-white border border-sand-300 rounded-2xl p-5 shadow-sm hover:border-forest/20 hover:shadow-md transition-all duration-300 flex items-center gap-4">
+          <div class="w-12 h-12 bg-forest-50 border border-forest/10 rounded-xl flex items-center justify-center text-forest shrink-0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </div>
+          <div>
+            <span class="block text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total Listings</span>
+            <span class="text-2xl font-bold font-mono text-gray-950 block leading-tight" id="s-total">—</span>
+          </div>
+        </div>
+        
+        <div class="bg-white border border-sand-300 rounded-2xl p-5 shadow-sm hover:border-forest/20 hover:shadow-md transition-all duration-300 flex items-center gap-4">
+          <div class="w-12 h-12 bg-[#7F77DD]/10 border border-[#7F77DD]/10 rounded-xl flex items-center justify-center text-[#7F77DD] shrink-0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+            </svg>
+          </div>
+          <div>
+            <span class="block text-[10px] text-gray-400 font-bold uppercase tracking-wider">Localities Covered</span>
+            <span class="text-2xl font-bold font-mono text-gray-950 block leading-tight" id="s-areas">—</span>
+          </div>
+        </div>
+
+        <div class="bg-white border border-sand-300 rounded-2xl p-5 shadow-sm hover:border-forest/20 hover:shadow-md transition-all duration-300 flex items-center gap-4">
+          <div class="w-12 h-12 bg-[#EF9F27]/10 border border-[#EF9F27]/10 rounded-xl flex items-center justify-center text-[#EF9F27] shrink-0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="1" x2="12" y2="23"/>
+              <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+            </svg>
+          </div>
+          <div>
+            <span class="block text-[10px] text-gray-400 font-bold uppercase tracking-wider">Median Price</span>
+            <span class="text-2xl font-bold font-mono text-gray-950 block leading-tight" id="s-median">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 flex-1 min-h-0">
+        
+        <!-- Price Chart Card -->
+        <div class="bg-white border border-sand-300 rounded-2xl p-5 shadow-sm flex flex-col">
+          <div class="border-b border-sand-200 pb-3 mb-4 flex justify-between items-center">
+            <div>
+              <h3 class="font-bold text-sm text-gray-950 uppercase tracking-wider">Median Price by Locality</h3>
+              <p class="text-[11px] text-gray-400">Comparing top 15 most active areas (₹ Lakhs)</p>
+            </div>
+            <span class="text-[10px] px-2 py-0.5 bg-forest-50 text-forest border border-forest-100 rounded-md font-semibold font-mono">₹L</span>
+          </div>
+          <div class="flex-1 relative min-h-[220px]">
+            <canvas id="area-chart" class="w-full h-full"></canvas>
+          </div>
+        </div>
+        
+        <!-- Listing Count Chart Card -->
+        <div class="bg-white border border-sand-300 rounded-2xl p-5 shadow-sm flex flex-col">
+          <div class="border-b border-sand-200 pb-3 mb-4 flex justify-between items-center">
+            <div>
+              <h3 class="font-bold text-sm text-gray-950 uppercase tracking-wider">Listing Count by Locality</h3>
+              <p class="text-[11px] text-gray-400">Volume distribution of properties in database</p>
+            </div>
+            <span class="text-[10px] px-2 py-0.5 bg-[#7F77DD]/10 text-[#7F77DD] border border-[#7F77DD]/10 rounded-md font-semibold font-mono">LISTINGS</span>
+          </div>
+          <div class="flex-1 relative min-h-[220px]">
+            <canvas id="count-chart" class="w-full h-full"></canvas>
+          </div>
+        </div>
+        
+      </div>
+      
+    </div>
+
+  </main>
+
+  <!-- Script logic -->
+  <script>
+    const API = '';
+    const CIRCUMFERENCE = 2 * Math.PI * 22; // SVG progress circle circumference (r=22)
+
+    // Check status check logic
+    async function checkStatus() {
+      try {
+        const res = await fetch(`${API}/health`);
+        const data = await res.json();
+        if (data.status === 'ok') {
+          document.getElementById('status-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm';
+          document.getElementById('status-text').textContent = `${data.listings.toLocaleString()} listings loaded`;
+        }
+      } catch (err) {
+        document.getElementById('status-dot').className = 'w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm';
+        document.getElementById('status-text').textContent = 'API offline';
+      }
+    }
+    checkStatus();
+
+    // Tab Switching
+    function switchTab(name) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+      document.getElementById('tab-' + name).classList.remove('hidden');
+
+      const tabs = ['recommend', 'map', 'predict', 'insights'];
+      tabs.forEach(t => {
+        const el = document.getElementById('nav-' + t);
+        if (t === name) {
+          el.className = "px-4 py-2 text-sm font-semibold rounded-lg text-forest bg-forest-50 border border-forest/10 transition-all duration-200 shadow-sm";
+        } else {
+          el.className = "px-4 py-2 text-sm font-medium rounded-lg text-gray-500 hover:text-gray-900 hover:bg-sand-50 transition-all duration-200";
+        }
+      });
+
+      if (name === 'insights') loadInsights();
+    }
+
+    // Bedroom Interactive Pills
+    let selectedBeds = '3';
+    document.querySelectorAll('.bed-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.bed-pill').forEach(b => {
+          b.className = "bed-pill px-3 py-2 text-xs font-medium border border-sand-300 rounded-lg text-gray-600 hover:border-forest hover:text-forest hover:bg-sand-50 transition-all duration-150";
+        });
+        btn.className = "bed-pill active-pill px-3 py-2 text-xs font-semibold border border-forest bg-forest text-white rounded-lg transition-all duration-150 shadow-sm";
+        selectedBeds = btn.dataset.val;
+      });
     });
-    new Chart(document.getElementById('count-chart'), {
-      type: 'bar',
-      data: { labels, datasets: [{ label: 'Listings', data: rows.map(r=>r.listing_count), backgroundColor: PURPLE + '99', borderColor: PURPLE, borderWidth: 1 }] },
-      options: { responsive: true, plugins: { legend: { display: false } } }
+
+    // Furnishing Pills
+    let selectedFurnish = '';
+    document.querySelectorAll('.furnish-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.furnish-pill').forEach(b => {
+          b.className = "furnish-pill px-3.5 py-2 text-xs font-medium border border-sand-300 rounded-lg text-gray-600 hover:border-forest hover:text-forest hover:bg-sand-50 transition-all duration-150";
+        });
+        btn.className = "furnish-pill active-pill px-3.5 py-2 text-xs font-semibold border border-forest bg-forest text-white rounded-lg transition-all duration-150 shadow-sm";
+        selectedFurnish = btn.dataset.val;
+      });
     });
 
-    chartsLoaded = true;
-  } catch(e) {
-    document.getElementById('stat-row').innerHTML = '<p style="color:var(--muted);font-size:13px">Could not load insights — make sure the API is running.</p>';
-  }
-}
-</script>
+    // Amenity Tag toggle
+    function toggleAmenity(el) {
+      el.classList.toggle('bg-forest');
+      el.classList.toggle('text-white');
+      el.classList.toggle('border-forest');
+      el.classList.toggle('shadow-sm');
+      el.classList.toggle('selected-tag');
+      
+      el.classList.toggle('bg-white');
+      el.classList.toggle('text-gray-600');
+      el.classList.toggle('border-sand-300');
+    }
+
+    // Map Sub-Tab Switching
+    function switchMap(type, el) {
+      document.querySelectorAll('#map-tab-heatmap, #map-tab-clusters').forEach(b => {
+        b.className = "px-4 py-2 text-xs font-medium rounded-lg text-gray-500 hover:text-gray-900 transition-all duration-200";
+      });
+      el.className = "px-4 py-2 text-xs font-semibold rounded-lg bg-white text-gray-900 shadow-sm border border-sand-300/40 transition-all duration-200";
+      
+      document.getElementById('main-map-frame').src = `/map/${type}`;
+      document.getElementById('heatmap-legend').classList.toggle('hidden', type !== 'heatmap');
+      document.getElementById('clusters-legend').classList.toggle('hidden', type !== 'clusters');
+    }
+
+    // Price formatter L/Cr
+    function formatLakhs(v) {
+      if (!v && v !== 0) return '—';
+      const l = v / 1e5;
+      return l >= 100 ? `₹${(l/100).toFixed(2)} Cr` : `₹${l.toFixed(1)}L`;
+    }
+
+    // Create custom SVG match score ring
+    function buildMatchRing(similarity) {
+      const score = Math.round((similarity || 0) * 100);
+      const strokeOffset = CIRCUMFERENCE * (1 - score / 100);
+      
+      // Select appropriate color depending on score
+      let colorClass = 'stroke-forest';
+      let textClass = 'fill-forest';
+      if (score < 50) {
+        colorClass = 'stroke-gray-400';
+        textClass = 'fill-gray-500';
+      } else if (score < 75) {
+        colorClass = 'stroke-amber-500';
+        textClass = 'fill-amber-600';
+      }
+
+      return `
+        <svg width="56" height="56" viewBox="0 0 56 56" class="shrink-0">
+          <circle cx="28" cy="28" r="22" fill="none" stroke="#E2E0D8" stroke-width="3" />
+          <circle cx="28" cy="28" r="22" fill="none" class="${colorClass} ring-fill" stroke-width="3.5"
+            stroke-dasharray="${CIRCUMFERENCE.toFixed(1)}" 
+            stroke-dashoffset="${CIRCUMFERENCE.toFixed(1)}" 
+            data-offset="${strokeOffset.toFixed(1)}"
+            stroke-linecap="round" transform="rotate(-90 28 28)"/>
+          <text x="28" y="31.5" text-anchor="middle" class="${textClass} font-semibold font-sans" font-size="11.5">${score}%</text>
+        </svg>
+      `;
+    }
+
+    // Dynamic animated load listing card HTML
+    function buildListingCard(item, index) {
+      const beds = item.BEDROOM_NUM ? `${Math.round(item.BEDROOM_NUM)} BHK` : '';
+      const area = item.AVG_AREA_SQFT ? `${Math.round(item.AVG_AREA_SQFT).toLocaleString()} sqft` : '';
+      const type = (item.PROPERTY_TYPE || 'Flat').toUpperCase();
+      const loc = (item.location || item.AREA || '').replace(/\b\w/g, c => c.toUpperCase());
+      const age = item.AGE ? `${Math.round(item.AGE)} yrs old` : '';
+      const reason = item.match_reason || 'Matched preferences';
+      const amenities = item.AMENITIES ? item.AMENITIES.split(',').slice(0, 3).map(a => a.trim()) : [];
+      
+      let typeBadgeStyle = 'bg-blue-50 text-blue-700 border border-blue-100';
+      if (type.includes('VILLA')) typeBadgeStyle = 'bg-amber-50 text-amber-700 border border-amber-100';
+      if (type.includes('PLOT')) typeBadgeStyle = 'bg-emerald-50 text-emerald-700 border border-emerald-100';
+      if (type.includes('HOUSE')) typeBadgeStyle = 'bg-purple-50 text-purple-700 border border-purple-100';
+
+      return `
+        <div class="bg-white border border-sand-300 rounded-2xl p-5 mb-3 flex gap-5 items-center hover:border-forest/20 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 card-enter" style="animation-delay: ${index * 0.06}s">
+          <!-- Left Score ring -->
+          ${buildMatchRing(item.similarity_score)}
+          
+          <!-- Center specs -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1.5">
+              <span class="text-[9px] font-bold px-2 py-0.5 rounded-md ${typeBadgeStyle}">${type}</span>
+              ${beds ? `<span class="text-xs font-semibold text-gray-700">${beds}</span>` : ''}
+              ${area ? `<span class="text-gray-300 text-xs">·</span><span class="text-xs text-gray-500 font-medium">${area}</span>` : ''}
+            </div>
+            
+            <h4 class="font-bold text-gray-950 text-sm truncate mb-1">${loc}</h4>
+            
+            <div class="flex items-center gap-2 flex-wrap text-[10px] text-gray-400 font-medium mb-3">
+              ${item.FURNISH ? `<span class="capitalize">${item.FURNISH}</span>` : ''}
+              ${age ? `<span>·</span><span>${age}</span>` : ''}
+              ${item.VERIFIED ? `
+                <span class="text-emerald-600 flex items-center gap-0.5 ml-1">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                  Verified
+                </span>` : ''}
+            </div>
+
+            <!-- Match reason & amenities -->
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="inline-flex items-center gap-1 text-[10px] bg-forest-50 border border-forest-100 text-forest px-2.5 py-0.5 rounded-lg font-semibold shadow-sm shadow-forest/5 shrink-0">
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                ${reason}
+              </span>
+              ${amenities.map(a => `<span class="text-[9px] bg-sand-200 border border-sand-300 text-gray-500 px-2 py-0.5 rounded-md font-medium">${a}</span>`).join('')}
+            </div>
+          </div>
+          
+          <!-- Right pricing -->
+          <div class="text-right shrink-0">
+            <span class="text-lg font-bold font-mono text-forest block leading-none">${formatLakhs(item.PRICE)}</span>
+            ${item.AVG_AREA_SQFT && item.PRICE ? `
+              <span class="text-[10px] font-medium text-gray-400 mt-1 block">₹${Math.round(item.PRICE / item.AVG_AREA_SQFT).toLocaleString()}/sqft</span>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    // Recommendation search triggers
+    async function getRecommendations() {
+      const selectedAmenities = [...document.querySelectorAll('.selected-tag')].map(el => el.textContent.trim());
+      const minLakh = parseFloat(document.getElementById('r-min').value) || 0;
+      const maxLakh = parseFloat(document.getElementById('r-max').value) || 1000;
+
+      const payload = {
+        location:      document.getElementById('r-location').value || 'gachibowli',
+        budget_min:    minLakh * 100000,
+        budget_max:    maxLakh * 100000,
+        bedrooms:      selectedBeds ? parseInt(selectedBeds) : null,
+        property_type: document.getElementById('r-type').value || null,
+        furnish:       selectedFurnish || null,
+        amenities:     selectedAmenities,
+        top_n: 10,
+      };
+
+      const container = document.getElementById('recommend-results');
+      
+      // Insert Skeleton Loaders
+      const template = document.getElementById('skeleton-card-template');
+      container.innerHTML = '';
+      for (let i = 0; i < 4; i++) {
+        container.appendChild(template.content.cloneNode(true));
+      }
+      document.getElementById('rec-map-wrap').classList.add('hidden');
+
+      try {
+        const res = await fetch(`${API}/recommend`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (!data.results || data.results.length === 0) {
+          container.innerHTML = `
+            <div class="h-full flex flex-col items-center justify-center text-center p-12 bg-white border border-sand-300 rounded-2xl">
+              <div class="w-16 h-16 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center text-rose-500 mb-4 shadow-sm">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              </div>
+              <h4 class="font-bold text-gray-950 text-base">No Matches Found</h4>
+              <p class="text-sm text-gray-500 mt-1 max-w-sm">No properties in Gachibowli matched your filters. Try widening your budget or clearing amenity constraints.</p>
+            </div>
+          `;
+          return;
+        }
+
+        // Header statistics
+        const header = `
+          <div class="flex items-center justify-between mb-4 border-b border-sand-300 pb-3 shrink-0">
+            <h3 class="font-bold text-sm text-gray-900 uppercase tracking-wider">${data.count} Properties Found</h3>
+            <span class="text-xs font-semibold px-3 py-1 bg-forest-50 text-forest border border-forest-100 rounded-full">${payload.location.toUpperCase()}</span>
+          </div>
+        `;
+        
+        const cardHTMLs = data.results.map((r, i) => buildListingCard(r, i)).join('');
+        container.innerHTML = header + '<div class="space-y-1">' + cardHTMLs + '</div>';
+
+        // Trigger SVG dashoffset animation after cards render
+        setTimeout(() => {
+          document.querySelectorAll('.ring-fill').forEach(circle => {
+            const offset = circle.getAttribute('data-offset');
+            circle.style.strokeDashoffset = offset;
+          });
+        }, 100);
+
+        // Load interactive recommendation map
+        if (data.map_url) {
+          document.getElementById('rec-map-wrap').classList.remove('hidden');
+          document.getElementById('rec-map-frame').src = data.map_url;
+        }
+      } catch (err) {
+        container.innerHTML = `
+          <div class="h-full flex flex-col items-center justify-center text-center p-12 bg-white border border-sand-300 rounded-2xl">
+            <div class="w-16 h-16 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center text-rose-500 mb-4 shadow-sm animate-bounce">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/>
+                <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+            <h4 class="font-bold text-gray-950 text-base">API Offline</h4>
+            <p class="text-sm text-gray-500 mt-1 max-w-sm">Unable to connect to the backend server. Start the uvicorn API: <code class="bg-sand-200 border border-sand-300 px-1.5 py-0.5 rounded font-mono text-xs text-rose-600 font-semibold">uvicorn app:app --reload</code></p>
+          </div>
+        `;
+      }
+    }
+
+    // Predict price ML
+    async function predictPrice() {
+      const payload = {
+        location:      document.getElementById('p-location').value,
+        bedrooms:      parseInt(document.getElementById('p-beds').value),
+        area_sqft:     parseFloat(document.getElementById('p-area').value),
+        property_type: document.getElementById('p-type').value,
+        furnish:       document.getElementById('p-furnish').value,
+        age:           parseInt(document.getElementById('p-age').value) || 0,
+        floor:         parseInt(document.getElementById('p-floor').value) || 1,
+        total_floors:  parseInt(document.getElementById('p-totalfloor').value) || 5,
+        landmarks:     parseInt(document.getElementById('p-landmarks').value) || 3,
+        amenity_count: 5,
+        verified:      1,
+      };
+
+      const resultContainer = document.getElementById('predict-result-container');
+      
+      // Predict shimmering load card
+      resultContainer.innerHTML = `
+        <div class="w-full max-w-md space-y-4">
+          <div class="h-4 w-40 shimmer rounded mx-auto"></div>
+          <div class="h-10 w-64 shimmer rounded mx-auto"></div>
+          <div class="h-6 w-32 shimmer rounded mx-auto"></div>
+          <div class="grid grid-cols-3 gap-3 mt-6">
+            <div class="h-20 shimmer rounded-xl"></div>
+            <div class="h-20 shimmer rounded-xl"></div>
+            <div class="h-20 shimmer rounded-xl"></div>
+          </div>
+        </div>
+      `;
+
+      try {
+        const res = await fetch(`${API}/predict`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.detail) {
+          resultContainer.innerHTML = `
+            <div class="text-center max-w-sm">
+              <p class="font-semibold text-gray-900">${data.detail}</p>
+            </div>
+          `;
+          return;
+        }
+
+        resultContainer.innerHTML = `
+          <div class="w-full max-w-md space-y-6 text-center card-enter">
+            <div>
+              <span class="text-xs font-semibold text-gray-400 uppercase tracking-widest block mb-1">Estimated Valuation</span>
+              <h2 class="text-4xl font-bold font-mono text-forest tracking-tight">${formatLakhs(data.predicted_price)}</h2>
+              <span class="text-sm font-semibold text-gray-500 mt-1 block">₹${data.predicted_price.toLocaleString('en-IN')}</span>
+            </div>
+            
+            <div class="border-t border-sand-200 pt-5 text-left space-y-3">
+              <span class="block text-[10px] text-gray-400 font-bold uppercase tracking-wider text-center">Prediction Confidence Ranges</span>
+              <div class="grid grid-cols-3 gap-3">
+                <div class="bg-sand-50 border border-sand-300 rounded-xl p-3.5 text-center shadow-sm">
+                  <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Low Range</span>
+                  <span class="text-sm font-bold font-mono text-gray-700 block">${formatLakhs(data.low_estimate)}</span>
+                </div>
+                <div class="bg-forest-50/50 border border-forest-100 rounded-xl p-3.5 text-center shadow-sm">
+                  <span class="block text-[10px] font-bold text-forest uppercase tracking-wider mb-1">Predicted</span>
+                  <span class="text-sm font-bold font-mono text-forest block">${formatLakhs(data.predicted_price)}</span>
+                </div>
+                <div class="bg-sand-50 border border-sand-300 rounded-xl p-3.5 text-center shadow-sm">
+                  <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">High Range</span>
+                  <span class="text-sm font-bold font-mono text-gray-700 block">${formatLakhs(data.high_estimate)}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="text-[10px] text-gray-400 bg-sand-50 border border-sand-300 rounded-xl p-3 text-center">
+              Target locality: <strong class="text-gray-600 uppercase">${payload.location}</strong> · specs: <strong>${payload.bedrooms}BHK / ${payload.area_sqft} sq ft</strong>
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        resultContainer.innerHTML = `
+          <div class="text-center max-w-sm">
+            <p class="font-semibold text-rose-500 text-sm">Prediction Service Error</p>
+            <p class="text-xs text-gray-400 mt-1">Make sure the API backend model files are correctly initialized.</p>
+          </div>
+        `;
+      }
+    }
+
+    // Insights loading
+    let insightsChartsCreated = false;
+    async function loadInsights() {
+      if (insightsChartsCreated) return;
+
+      const statContainer = document.getElementById('insights-stats-container');
+      const totalStat = document.getElementById('s-total');
+      const areasStat = document.getElementById('s-areas');
+      const medianStat = document.getElementById('s-median');
+
+      try {
+        const res = await fetch(`${API}/insights/areas?top_n=15`);
+        const data = await res.json();
+        const rows = data.data || [];
+
+        // Sum up stats
+        const total = rows.reduce((s, r) => s + (r.listing_count || 0), 0);
+        totalStat.textContent = total.toLocaleString();
+        
+        areasStat.textContent = rows.length;
+
+        const prices = rows.map(r => r.median_price_lakh).filter(Boolean);
+        const median = prices.sort((a, b) => a - b)[Math.floor(prices.length / 2)];
+        medianStat.textContent = median ? `₹${median}L` : '—';
+
+        // Extract Chart.js Labels & Data
+        const labels = rows.map(r => (r.area || '').replace(/\b\w/g, c => c.toUpperCase()));
+        const counts = rows.map(r => r.listing_count);
+        const medians = rows.map(r => r.median_price_lakh);
+
+        const fontConfig = {
+          family: 'Inter, system-ui, sans-serif',
+          size: 10,
+          weight: '500'
+        };
+
+        const baseChartOptions = {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#6B6A64', font: fontConfig }
+            },
+            y: {
+              grid: { color: '#EFEDE6' },
+              ticks: { color: '#9CA3AF', font: fontConfig }
+            }
+          }
+        };
+
+        // Price Chart
+        new Chart(document.getElementById('area-chart'), {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              data: medians,
+              backgroundColor: '#0A594030',
+              borderColor: '#0A5940',
+              borderWidth: 1.5,
+              borderRadius: 6
+            }]
+          },
+          options: {
+            ...baseChartOptions,
+            scales: {
+              ...baseChartOptions.scales,
+              y: {
+                ...baseChartOptions.scales.y,
+                ticks: {
+                  ...baseChartOptions.scales.y.ticks,
+                  callback: v => '₹' + v + 'L'
+                }
+              }
+            }
+          }
+        });
+
+        // Count Chart
+        new Chart(document.getElementById('count-chart'), {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              data: counts,
+              backgroundColor: '#7F77DD30',
+              borderColor: '#7F77DD',
+              borderWidth: 1.5,
+              borderRadius: 6
+            }]
+          },
+          options: baseChartOptions
+        });
+
+        insightsChartsCreated = true;
+      } catch (err) {
+        statContainer.innerHTML = `
+          <p class="text-sm font-semibold text-rose-500 w-full text-center py-4 bg-white border border-sand-300 rounded-2xl shadow-sm">
+            Failed to load insights datasets. Start the backend app server first.
+          </p>
+        `;
+      }
+    }
+  </script>
 </body>
 </html>

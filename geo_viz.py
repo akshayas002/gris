@@ -185,9 +185,10 @@ def build_price_heatmap(df: pd.DataFrame, output: str = "price_heatmap.html") ->
             folium.Marker(
                 location=[row["lat"], row["lng"]],
                 icon=folium.DivIcon(
-                    html=(f'<div style="font-size:10px;font-weight:600;background:rgba(255,255,255,0.9);'
-                          f'padding:2px 6px;border-radius:4px;border:1px solid #ccc;'
-                          f'white-space:nowrap;color:#1a1a18">₹{p_lakh:.0f}L</div>'),
+                    html=(f'<div style="font-family:\'Inter\', sans-serif; font-size:10px; font-weight:600; '
+                          f'background:rgba(255,255,255,0.95); padding:3px 8px; border-radius:12px; '
+                          f'box-shadow: 0 1px 3px rgba(0,0,0,0.15); border: 1px solid #e2e0d8; '
+                          f'white-space:nowrap; color:#0a5940; text-align:center;">₹{p_lakh:.0f}L</div>'),
                     icon_size=(70, 22),
                 ),
                 tooltip=f"{row['location'].title()} — median ₹{p_lakh:.1f}L",
@@ -195,7 +196,7 @@ def build_price_heatmap(df: pd.DataFrame, output: str = "price_heatmap.html") ->
 
     out_path = MAP_DIR / output
     m.save(str(out_path))
-    print(f"Saved price heatmap → {out_path}  ({len(valid):,} points)")
+    print(f"Saved price heatmap -> {out_path}  ({len(valid):,} points)")
     return str(out_path)
 
 
@@ -211,9 +212,9 @@ def build_cluster_map(df: pd.DataFrame, n_clusters: int = 10,
     km           = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
     valid["CLUSTER"] = km.fit_predict(coords)
 
-    COLORS = ["#1D9E75", "#7F77DD", "#D85A30", "#378ADD",
-              "#EF9F27", "#D4537E", "#639922", "#E24B4A",
-              "#17B2C3", "#A259D9"]
+    COLORS = ["#0A5940", "#7F77DD", "#D85A30", "#378ADD",
+              "#EF9F27", "#D4537E", "#17B2C3", "#A259D9",
+              "#639922", "#E24B4A"]
 
     m  = folium.Map(location=[HYD_LAT, HYD_LNG], zoom_start=11, tiles="CartoDB positron")
     mc = MarkerCluster(
@@ -227,13 +228,28 @@ def build_cluster_map(df: pd.DataFrame, n_clusters: int = 10,
         p_lakh = row["PRICE_NUM"] / 1e5 if pd.notna(row.get("PRICE_NUM")) else 0
         beds   = int(row["BEDROOM_NUM"]) if pd.notna(row.get("BEDROOM_NUM")) else "?"
         loc    = str(row.get("location", "")).title()
-        popup  = (f"<b>{loc}</b><br>₹{p_lakh:.1f}L · {beds} BHK<br>"
-                  f"{str(row.get('PROPERTY_TYPE',''))} · {str(row.get('FURNISH',''))}")
+        prop_type = str(row.get('PROPERTY_TYPE','')).upper()
+        furnish = str(row.get('FURNISH','')).capitalize()
+        
+        popup_html = (
+            f'<div style="font-family:\'Inter\', sans-serif; font-size:12px; color:#1a1a18; min-width:180px; padding:4px;">'
+            f'  <div style="font-weight:600; font-size:13px; margin-bottom:4px; color:{COLORS[c]};">{loc}</div>'
+            f'  <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:6px;">'
+            f'    <span style="font-family:\'DM Mono\', monospace; font-size:15px; font-weight:700; color:#0a5940;">₹{p_lakh:.1f}L</span>'
+            f'    <span style="color:#6b6a64; font-size:11px;">({beds} BHK)</span>'
+            f'  </div>'
+            f'  <div style="display:flex; gap:4px; flex-wrap:wrap;">'
+            f'    <span style="font-size:9px; font-weight:600; background:#e8f4f0; color:#0a5940; padding:2px 5px; border-radius:4px; border:1px solid #c6e5d9;">{prop_type}</span>'
+            f'    <span style="font-size:9px; font-weight:600; background:#f0ede6; color:#6b6a64; padding:2px 5px; border-radius:4px; border:1px solid #e2e0d8;">{furnish}</span>'
+            f'  </div>'
+            f'</div>'
+        )
+        
         folium.CircleMarker(
             location=[row["LAT"], row["LNG"]],
             radius=5, color=COLORS[c], fill=True,
             fill_color=COLORS[c], fill_opacity=0.75,
-            popup=folium.Popup(popup, max_width=200),
+            popup=folium.Popup(popup_html, max_width=220),
             tooltip=f"₹{p_lakh:.1f}L — {loc}",
         ).add_to(mc)
 
@@ -245,9 +261,11 @@ def build_cluster_map(df: pd.DataFrame, n_clusters: int = 10,
         folium.Marker(
             location=center.tolist(),
             icon=folium.DivIcon(
-                html=(f'<div style="background:{COLORS[cid % len(COLORS)]};color:#fff;'
-                      f'font-size:11px;font-weight:600;padding:3px 8px;border-radius:12px;'
-                      f'white-space:nowrap">Zone {cid+1} · {len(cluster_rows)}</div>'),
+                html=(f'<div style="background:{COLORS[cid % len(COLORS)]}; color:#fff; '
+                      f'font-family:\'Inter\', sans-serif; font-size:10px; font-weight:600; '
+                      f'padding:4px 10px; border-radius:999px; box-shadow: 0 2px 5px rgba(0,0,0,0.15); '
+                      f'border: 1px solid rgba(255,255,255,0.3); text-align: center; '
+                      f'white-space:nowrap;">Zone {cid+1} ({len(cluster_rows)})</div>'),
                 icon_size=(150, 26),
             ),
             tooltip=f"Zone {cid+1}: {len(cluster_rows)} listings · median ₹{med_price:.0f}L",
@@ -255,7 +273,7 @@ def build_cluster_map(df: pd.DataFrame, n_clusters: int = 10,
 
     out_path = MAP_DIR / output
     m.save(str(out_path))
-    print(f"Saved cluster map → {out_path}  ({len(valid):,} listings, {n_clusters} zones)")
+    print(f"Saved cluster map -> {out_path}  ({len(valid):,} listings, {n_clusters} zones)")
     return str(out_path)
 
 
@@ -278,17 +296,26 @@ def build_listing_map(df: pd.DataFrame, listings_df: pd.DataFrame,
         score  = float(row.get("similarity_score", 0))
         loc    = str(row.get("location", "")).title()
         reason = str(row.get("match_reason", ""))
-        color  = "#1D9E75" if score > 0.7 else "#EF9F27" if score > 0.4 else "#888780"
+        color  = "#0A5940" if score > 0.7 else "#EF9F27" if score > 0.4 else "#888780"
 
-        popup = (f"<b>₹{p_lakh:.1f}L</b> · {beds} BHK<br>"
-                 f"{str(row.get('PROPERTY_TYPE',''))} · {loc}<br>"
-                 f"<small>{reason} · score {score:.2f}</small>")
+        popup_html = (
+            f'<div style="font-family:\'Inter\', sans-serif; font-size:12px; color:#1a1a18; min-width:190px; padding:4px;">'
+            f'  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">'
+            f'    <span style="font-family:\'DM Mono\', monospace; font-size:15px; font-weight:700; color:#0a5940;">₹{p_lakh:.1f}L</span>'
+            f'    <span style="font-size:10px; font-weight:600; color:{color}; background:{color}15; padding:2px 6px; border-radius:999px;">{int(score*100)}% Match</span>'
+            f'  </div>'
+            f'  <div style="font-weight:500; font-size:11px; color:#6b6a64; margin-bottom:4px;">{beds} BHK · {loc}</div>'
+            f'  <div style="font-size:10px; color:#6b6a64; background:#f0ede6; padding:4px 6px; border-radius:4px; border:1px solid #e2e0d8; font-style:italic;">'
+            f'    {reason}'
+            f'  </div>'
+            f'</div>'
+        )
 
         folium.CircleMarker(
             location=[row["LAT"], row["LNG"]],
             radius=9, color=color, fill=True,
             fill_color=color, fill_opacity=0.85,
-            popup=folium.Popup(popup, max_width=220),
+            popup=folium.Popup(popup_html, max_width=220),
             tooltip=f"₹{p_lakh:.1f}L · {beds}BHK · {loc}",
         ).add_to(m)
 

@@ -1,8 +1,20 @@
+<<<<<<< HEAD
 # 🔹 Virtual Environments
+=======
+# ── Python ────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# ── Virtual environment ───────────────────────────────────────────
+>>>>>>> 31795b2 (updated the frontend)
 env/
 venv/
 .venv/
 ENV/
+<<<<<<< HEAD
 env.bak/
 venv.bak/
 
@@ -58,3 +70,50 @@ htmlcov/
 # 🔹 Local database files (optional)
 *.sqlite3
 db.sqlite
+=======
+
+# ── Data files (too large for Git) ───────────────────────────────
+data/listings_latest.csv
+data/listings_*.csv
+data/listings_*.json
+data/*_debug_*.html
+dvt_project/
+
+# ── ML model artifacts ────────────────────────────────────────────
+models/model.pkl
+models/*.pkl
+plots/
+
+# ── Generated Folium maps ─────────────────────────────────────────
+static/maps/
+*.html
+!templates/index.html
+
+# ── Logs ─────────────────────────────────────────────────────────
+*.log
+scraper.log
+
+# ── MLflow (when you add it) ──────────────────────────────────────
+mlruns/
+mlartifacts/
+
+
+# ── OS files ──────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDEs ──────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Playwright browser binaries ───────────────────────────────────
+.playwright/
+
+# ── Misc ──────────────────────────────────────────────────────────
+.env
+*.zip
+node_modules/
+>>>>>>> 31795b2 (updated the frontend)
