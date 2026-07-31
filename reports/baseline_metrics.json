@@ -1,0 +1,9 @@
+{
+  "r2": 0.46509887145245876,
+  "mae": 8322.262422666034,
+  "rmse": 27238.723747534135,
+  "mape_buggy": 61.55943645414934,
+  "n_train": 7490,
+  "n_test": 1873,
+  "note": "Reproduces original bugs on purpose: mixed Sale/Rent/Unknown/Land, pre-split target encoding leakage, no outlier trimming, buggy MAPE."
+}

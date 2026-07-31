@@ -11,9 +11,19 @@ Endpoints:
   GET  /insights/localities → top localities table
   POST /predict             → ML price prediction
   GET  /listings            → paginated listing browse
+
+NOTE ON DATA/MODEL SOURCE (v2 update)
+---------------------------------------
+The original data/listings_latest.csv (raw scrape) this app was built
+against was never available in the delivered project. This version runs on
+data/app_listings.csv - built by src/prepare_app_data.py from the project's
+engineered export - and models/model_v2.pkl, a leak-fixed model trained on
+this same data (see reports/BEFORE_AFTER.md). Scope: Sale-only, residential
+property types only (Apartment/Villa/Builder_Floor/Farmhouse) - see
+src/prepare_app_data.py's docstring for exactly what that means and what's
+approximated (amenity list, floor number, age-in-years).
 """
 
-import ast
 import joblib
 import numpy as np
 import pandas as pd
@@ -31,38 +41,17 @@ from geo_viz import (
     build_price_heatmap, build_cluster_map,
     build_listing_map, area_price_summary,
 )
+from model_bridge import predict_price
 
 # ── Update these paths if your files are elsewhere ────────────────────────────
-DATA_PATH  = "data/listings_latest.csv"
-MODEL_PATH = "models/model.pkl"
+DATA_PATH  = "data/app_listings.csv"
+MODEL_PATH = "models/model_v2.pkl"
 # ─────────────────────────────────────────────────────────────────────────────
 
 MAP_DIR = Path("static/maps")
 MAP_DIR.mkdir(parents=True, exist_ok=True)
 
 state: dict = {}
-
-
-# ─── Location JSON parser ─────────────────────────────────────────────────────
-def parse_location(val) -> str:
-    """
-    Dataset stores location as JSON-like string:
-    "{'CITY': '269', 'LOCALITY_NAME': 'Gachibowli', ...}"
-    Extracts LOCALITY_NAME as a plain lowercase string.
-    """
-    if pd.isna(val):
-        return "unknown"
-    s = str(val).strip()
-    if not s.startswith("{"):
-        return s.lower().strip() or "unknown"
-    try:
-        d = ast.literal_eval(s)
-        if isinstance(d, dict):
-            name = (d.get("LOCALITY_NAME") or d.get("CITY_NAME") or "unknown")
-            return str(name).strip().lower()
-    except Exception:
-        pass
-    return "unknown"
 
 
 # ─── JSON-safe record cleaner ─────────────────────────────────────────────────
@@ -89,22 +78,17 @@ def clean_record(r: dict) -> dict:
 async def lifespan(app: FastAPI):
     print("Loading data and models...")
 
+    if not Path(DATA_PATH).exists():
+        raise FileNotFoundError(
+            f"{DATA_PATH} not found. Run: python src/prepare_app_data.py first."
+        )
     df = pd.read_csv(DATA_PATH, low_memory=False)
 
-    # Parse location JSON → plain locality name
-    df["location"] = df["location"].apply(parse_location)
-    df["AREA"]     = df["location"].copy()
-
-    # Numeric cleanup
-    df["PRICE"] = pd.to_numeric(df.get("PRICE"), errors="coerce")
+    # app_listings.csv is already clean (location is plain text, PRICE is
+    # numeric) - just derive the one convenience column downstream code expects
     mn = pd.to_numeric(df.get("MIN_AREA_SQFT"), errors="coerce").fillna(0)
     mx = pd.to_numeric(df.get("MAX_AREA_SQFT"), errors="coerce").fillna(0)
     df["AVG_AREA_SQFT"] = ((mn + mx) / 2).replace(0, np.nan)
-
-    # Fill PRICE from MIN/MAX midpoint where missing
-    min_p = pd.to_numeric(df.get("MIN_PRICE"), errors="coerce")
-    max_p = pd.to_numeric(df.get("MAX_PRICE"), errors="coerce")
-    df["PRICE"] = df["PRICE"].fillna((min_p + max_p) / 2)
 
     state["df"]          = df
     state["recommender"] = PropertyRecommender(df)
@@ -119,10 +103,10 @@ async def lifespan(app: FastAPI):
     # ML model
     if Path(MODEL_PATH).exists():
         state["model"] = joblib.load(MODEL_PATH)
-        print("ML model loaded")
+        print("ML model loaded (model_v2.pkl)")
     else:
         state["model"] = None
-        print("No model.pkl found — /predict returns 501. Run train_model.py first.")
+        print("No model_v2.pkl found — /predict returns 501. Run src/train_model.py first.")
 
     print(f"Ready. {len(df):,} listings loaded.")
     yield
@@ -244,51 +228,15 @@ def localities(top_n: int = Query(15, ge=1, le=50)):
 @app.post("/predict")
 def predict(req: PredictRequest):
     if state["model"] is None:
-        raise HTTPException(501, "Model not loaded. Run train_model.py first.")
-
-    artifacts = state["model"]
-    pipeline  = artifacts["pipeline"]
-    loc_map   = artifacts["location_enc_map"]
-    area_map  = artifacts["area_enc_map"]
-    gmean     = artifacts["global_mean_log"]
-    loc_key   = req.location.lower().strip()
-
-    age = req.age
-    if age <= 0:        age_bucket = "new"
-    elif age <= 3:      age_bucket = "0-3yr"
-    elif age <= 7:      age_bucket = "3-7yr"
-    elif age <= 15:     age_bucket = "7-15yr"
-    else:               age_bucket = "15yr+"
-
-    row = {
-        "BEDROOM_NUM":          req.bedrooms,
-        "AVG_AREA_SQFT":        req.area_sqft,
-        "AGE":                  req.age,
-        "TOTAL_FLOOR":          req.total_floors,
-        "FLOOR_NUM":            req.floor,
-        "FLOOR_RATIO":          req.floor / max(req.total_floors, 1),
-        "BALCONY_NUM":          1,
-        "TOTAL_LANDMARK_COUNT": req.landmarks,
-        "REGISTERED_DAYS":      30,
-        "AMENITY_COUNT":        req.amenity_count,
-        "IS_VERIFIED":          req.verified,
-        "location_ENC":         loc_map.get(loc_key, gmean),
-        "AREA_ENC":             area_map.get(loc_key, gmean),
-        "PROPERTY_TYPE":        req.property_type,
-        "FURNISH":              req.furnish,
-        "FACING":               "east",
-        "TRANSACT_TYPE":        "sell",
-        "RES_COM":              "residential",
-        "AGE_BUCKET":           age_bucket,
-    }
+        raise HTTPException(501, "Model not loaded. Run src/train_model.py first.")
 
     try:
-        log_price = pipeline.predict(pd.DataFrame([row]))[0]
-        price     = float(np.expm1(log_price))
+        result = predict_price(state["model"], req)
     except Exception as e:
         raise HTTPException(500, f"Prediction error: {e}")
 
-    return {
+    price = result["predicted_price_per_sqft_inr"] * req.area_sqft
+    response = {
         "predicted_price": round(price),
         "low_estimate":    round(price * 0.85),
         "high_estimate":   round(price * 1.15),
@@ -297,6 +245,9 @@ def predict(req: PredictRequest):
         "bedrooms":        req.bedrooms,
         "area_sqft":       req.area_sqft,
     }
+    if not result["in_scope"]:
+        response["scope_note"] = result["scope_note"]
+    return response
 
 
 @app.get("/listings")
