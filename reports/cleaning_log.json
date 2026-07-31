@@ -1,0 +1,23 @@
+{
+  "steps": [
+    "Loaded raw export: 9363 rows, 40 cols",
+    "Dropping duplicate column 'AREA_SQFT.1' (identical to 'AREA_SQFT': True)",
+    "Dropping duplicate column 'LOCALITY.1' (identical to 'LOCALITY': True)",
+    "Dropping duplicate column 'PROP_TYPE_CLEAN.1' (identical to 'PROP_TYPE_CLEAN': True)",
+    "Dropping duplicate column 'LISTING_AGE_DAYS.1' (identical to 'LISTING_AGE_DAYS': True)",
+    "Dropping duplicate column 'LOCALITY_MEDIAN_PRICE.1' (identical to 'LOCALITY_MEDIAN_PRICE': True)",
+    "Dropping leakage columns: ['LOG_PRICE_SQFT', 'LOCALITY_MEDIAN_PRICE', 'PRICE_PER_BED', 'PRICE_INR']",
+    "Scoped to TRANSACT_LABEL == 'Sale': 9363 -> 7281 rows",
+    "Scoped to residential types ['Apartment', 'Villa', 'Builder_Floor', 'Farmhouse']: 7281 -> 4604 rows",
+    "Trimmed TARGET_PRICE_SQFT to [1st,99th] percentile = [3126, 217813]: 4604 -> 4510 rows",
+    "Imputed 'FLOOR_RATIO' median (missing frac=30.89%), added 'FLOOR_RATIO_WAS_MISSING' flag",
+    "Imputed 'BALCONY_NUM' median (missing frac=0.09%), added 'BALCONY_NUM_WAS_MISSING' flag",
+    "Imputed 'BEDROOM_NUM_CLEAN' median (missing frac=0.09%), added 'BEDROOM_NUM_CLEAN_WAS_MISSING' flag",
+    "Imputed 'TOTAL_FLOOR' median (missing frac=0.95%), added 'TOTAL_FLOOR_WAS_MISSING' flag",
+    "Final clean dataset: 4510 rows, 32 cols"
+  ],
+  "final_shape": [
+    4510,
+    32
+  ]
+}
