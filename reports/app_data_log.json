@@ -1,0 +1,9 @@
+{
+  "steps": [
+    "Loaded raw export: 9363 rows",
+    "Scoped to Sale + residential types: 4604 rows",
+    "Winsorized target outliers: 4510 rows remain",
+    "Nulled out-of-bounds coordinates: 259 rows",
+    "Wrote data/app_listings.csv: 4510 rows, 20 cols"
+  ]
+}
